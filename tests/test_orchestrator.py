@@ -328,3 +328,23 @@ def test_threads_mode_opens_no_channels(tmp_path):
     assert root[1] == "CTL" and "h1 · late-day-momentum" in root[2]
     rid = con.execute("SELECT room_id FROM hypotheses WHERE id='h1'").fetchone()[0]
     assert rid.startswith("CTL#") and ("mention", rid, root and agent.calls[-1][2]) == agent.calls[-1]
+
+
+def test_monthly_shows_return_on_capital_not_rounded_zeros(env):
+    o, con, *_ = env
+    open_h1(o)
+    daily = pd.Series([0.004, -0.001, 0.002], index=pd.to_datetime(["2023-01-02", "2023-01-03", "2023-02-01"]))
+    db.record_trial(con, "h1", "research", {}, "s", "e", "g", 1, daily, {}, {}, False)
+    assert o._monthly("h1").splitlines() == ["2023-01 +0.30%", "2023-02 +0.20%"]
+
+
+def test_human_close_is_a_hard_stop(env):
+    o, con, runner, _, root = env
+    open_h1(o)
+    runner.verdicts = [verdict(False)]
+    freeze_verify(o, root, "h1", "room-1")
+    assert o.handle(msg("deflate close h1 kill criteria hit", "coder", "room-1")) == []   # humans only
+    a = o.handle(msg("deflate close h1 kill criteria hit", HUMAN, "room-1"))
+    assert con.execute("SELECT status FROM hypotheses WHERE id='h1'").fetchone()[0] == "dead"
+    assert any("closed by" in b and "kill criteria hit" in b for b in bodies(a))
+    assert any(b.startswith("@proposer-lead") for b in bodies(a))

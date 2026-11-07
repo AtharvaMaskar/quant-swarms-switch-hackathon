@@ -1,0 +1,30 @@
+id: h7
+card:
+  lens: contrarian
+  slug: red-day-rebound
+  contribution: method
+  problem: "The worst sessions for intraday buy-and-hold are big open-to-close sell-offs, but the next session looks like the opposite: after a day whose open-to-close return was below -1%, the next 09:21-15:14 session averaged about +20bp, positive in all 5 years 2022-2026 (n=75, t about 2.3, my quick scan, not a result)."
+  motivation: "The reference row loses most on red days and then earns it back the next day without being sized for it. One long session per trigger day is a hold of tens of bp, which is far more than the ~2.5bp round-trip cost that sank h2 (cost ratio 0.85-0.97)."
+  approach: "Go long the NIFTY front future for the whole next session after a sell-off day whose open-to-close return was worse than -thr, with a take-profit cap so a few rebound days cannot carry the net."
+  plan: "Features po = prev_day(open), pcl = prev_day(close), m = minute_of_day, atr(days 14). Entry long: m == 5 and pcl / po - 1 < -p.thr, max_per_day 1. Exit take_atr 1.0, stop_atr 1.0, time 15:15. CPCV over thr in [0.0075, 0.01, 0.0125]. This is not gap-based: it reads the previous session's open-to-close move, not today's gap."
+  mechanism: "Intraday sell-offs on NSE are amplified by forced flow that does not care about price: broker square-offs of leveraged intraday (MIS) longs into 15:15-15:20, margin calls, and option writers delta-hedging short puts by selling futures as the market falls. That flow ends at the close, and the next morning liquidity providers who bought the overshoot are paid as the price recovers. The forced sellers keep paying because their constraint is leverage and the clock, not value."
+  rule: "long at 09:21 if m == 5 and prev_day(close)/prev_day(open) - 1 < -p.thr; exit take 1 ATR, stop 1 ATR, or 15:15"
+  kill:
+    - "CPCV median path SR <= 0"
+    - "best 5 days carry >= 50% of net even with the 1 ATR take cap (my uncapped scan had 0.63)"
+    - "the mirror rule (long after a day up more than thr) earns as much, which would mean it is drift, not rebound"
+    - "fewer than 50 bets in the research window"
+instrument: {segment: futures, underlying: NIFTY}
+session: {start: "09:20", end: "15:15"}
+features:
+  po: {fn: prev_day, field: open}
+  pcl: {fn: prev_day, field: close}
+  m: {fn: minute_of_day}
+entry:
+  long: "m == 5 and pcl / po - 1 < -p.thr"
+  max_per_day: 1
+exit: {stop_atr: 1.0, take_atr: 1.0, atr_days: 14, time: "15:15"}
+# card names no sizing; same as the reference example
+sizing: {risk_per_trade: 0.01, capital_inr: 14040000, max_lots: 10}
+params: {thr: 0.01}
+grid: {thr: [0.0075, 0.01, 0.0125]}

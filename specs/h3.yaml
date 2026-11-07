@@ -1,27 +1,30 @@
 id: h3
 card:
-  lens: contrarian
-  slug: vix-gated-drift
-  contribution: filter
-  problem: "Intraday buy-and-hold on the NIFTY front future (09:21 to 15:15) earns about 0.2bp a day overall, but it loses on calm days: when the previous close of India VIX is below about 14, the average session return is around -1.9bp, and when VIX is above 14 it is around +2.6bp (my quick split over 2022-2026, not a result)."
-  motivation: "The reference row loses most of its edge in low-VIX regimes. If the session drift is pay for bearing intraday variance, it should only show up when variance is priced high. Being long only on those days would cut the reference's losing days without adding any new signal."
-  approach: "Run the buy-and-hold reference only on sessions where the previous day's India VIX close is above a threshold, and stay flat otherwise."
-  plan: "Copy specs/refs/buy_hold.yaml and add a vix feature with entry long: m == 5 and v > p.vthr. Keep the same session, wide stop and sizing. Run CPCV on the research window with a grid of vthr = [12, 14, 17], which are the VIX quartile edges in data/vix for 2022-2026."
-  mechanism: "When VIX is high, hedgers and leveraged longs de-risk into the open and overnight, and whoever takes the other side of that flow during the session is paid a variance premium. In calm regimes nobody pays that premium, and option-writer delta hedging plus retail long unwinds pull the session flat to slightly negative."
-  rule: "long at 09:21 if m == 5 and vix > p.vthr; exit 15:15 or stop_atr 50"
+  lens: card
+  slug: basis-reversion
+  contribution: method
+  problem: "The NIFTY futures-minus-spot basis swings around its cost-of-carry level within the day. Does an unusually rich or cheap basis predict the futures leg falling or rising back over the next hour or two?"
+  motivation: "MacKinlay and Ramaswamy (RFS 1988) and Roll, Schwartz and Subrahmanyam (JF 2007) show that index-futures mispricing reverts and that arbitrage trading drives the reversion. NSE has heavy index arbitrage, and futures demand is often one-sided because retail and FPI flows go through futures. Our data has a 1m basis (close - spot), median about 48 points with a std of about 43. Neither h1 nor h2 uses it."
+  approach: "Fade the futures when the basis is extreme against its own last day of minutes."
+  plan: "Feature bz = zscore(basis, 375). 375 bars is one session, which takes out the slow carry decay with dte. Entries only between 09:45 and 14:30, at most 2 per day, exit with stop_atr 1.0 / take_atr 1.0 (atr_days 14) or at 15:15. CPCV over zthr."
+  mechanism: "When futures buyers or sellers push the future rich or cheap against spot, arbitrage desks take the other side and sell futures and buy the basket, or the reverse, until the gap closes. Futures-only participants (retail, FPI hedgers) pay this as immediacy cost because they can't or won't trade the cash basket."
+  rule: "short: bz > p.zthr and minute_of_day between 30 and 315; long: bz < -p.zthr and minute_of_day between 30 and 315; exit stop/take 1 ATR or 15:15"
   kill:
-    - "CPCV median path Sharpe <= the ref_buy_hold Sharpe over the same window"
-    - "The sign flips in more than 2 of the 5 calendar years 2022-2026 (VIX above the threshold gives a negative mean session return)"
-    - "The result disappears after dated costs (cost ratio fails)"
+    - "CPCV median path SR <= 0 after costs"
+    - "long and short sides have opposite-signed mean P&L, which would mean the result is drift rather than basis reversion"
+    - "fails the cost ratio"
 instrument: {segment: futures, underlying: NIFTY}
 session: {start: "09:20", end: "15:15"}
 features:
+  bz: {fn: zscore, field: basis, n: 375}
   m: {fn: minute_of_day}
-  v: {fn: vix}
+# 09:45 = 30, 14:30 = 315 (minute_of_day counts from 09:15); "between" read as inclusive
 entry:
-  long: "m == 5 and v > p.vthr"
-  max_per_day: 1
-exit: {stop_atr: 50, atr_days: 14, time: "15:15"}
-sizing: {risk_per_trade: 1.0, capital_inr: 14040000, max_lots: 8}
-params: {vthr: 14.0}
-grid: {vthr: [12.0, 14.0, 17.0]}
+  long: "bz < -p.zthr and m >= 30 and m <= 315"
+  short: "bz > p.zthr and m >= 30 and m <= 315"
+  max_per_day: 2
+exit: {stop_atr: 1.0, take_atr: 1.0, atr_days: 14, time: "15:15"}
+# card names no sizing; same as the reference example
+sizing: {risk_per_trade: 0.01, capital_inr: 14040000, max_lots: 10}
+params: {zthr: 2.0}
+grid: {zthr: [1.5, 2.0, 2.5]}

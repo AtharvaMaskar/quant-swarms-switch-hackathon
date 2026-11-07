@@ -25,7 +25,7 @@ HYP_TEMPLATE = ROOT / "templates/hypothesis-room.v2.yaml"
 LIT_TEMPLATE = ROOT / "templates/lit-room.v2.yaml"
 PROPOSERS = ("proposer-card", "proposer-lead", "proposer-contrarian")
 TERMINAL = ("dead", "rejected", "signed", "paper", "retired")
-HUMAN_ONLY = {"approve", "reject", "stop", "resume"}
+HUMAN_ONLY = {"approve", "reject", "stop", "resume", "close"}
 # one-off room per promoted strategy; alerts and P&L only, so no template file
 PAPER_YAML = """version: 2
 params:
@@ -318,7 +318,7 @@ class Orchestrator:
         db.set_status(self.con, hid, "patching")
         self._ask(hroom, "coder", f"@coder {hid} round {r}: patch allowed ({n}/{self.cfg.get('patch_budget', 4)}). "
                                   f"Change exactly one rule in specs/{nxt}.yaml, then freeze {nxt} specs/{nxt}.yaml.\n"
-                                  f"Research-window P&L by month (INR):\n{self._monthly(hid)}")
+                                  f"Research-window return on capital by month:\n{self._monthly(hid)}")
 
     def _monthly(self, hid) -> str:
         """Per-month P&L of the latest research trial; never holdout (design §7.4)."""
@@ -326,7 +326,7 @@ class Orchestrator:
                              (hid,)).fetchone()
         s = db._from_parquet(r[0])
         m = s.groupby(pd.to_datetime(s.index).to_period("M")).sum()
-        return "\n".join(f"{k} {v:,.0f}" for k, v in m.items())
+        return "\n".join(f"{k} {v:+.2%}" for k, v in m.items())   # daily is P&L / capital, not INR
 
     def _dead(self, hid, r, hroom, reason, summary):
         base = ids._parse(hid)[0]
@@ -411,6 +411,14 @@ class Orchestrator:
         self._rank()
 
     # ---- control ---------------------------------------------------------------------------------
+    def _on_close(self, c, room, name):
+        """A human ends a hypothesis the coder won't patch further: a hard stop, then the next round."""
+        h = self._hyp(c["hid"])
+        if not h or not h["room_id"] or h["status"] in TERMINAL:
+            return self._post(room, f"{c['hid']} round {self.round}: nothing to close (status {h and h['status']})")
+        why = f"closed by {name}" + (f": {c['note']}" if c["note"] else "")
+        self._dead(c["hid"], self._hround(c["hid"]), h["room_id"], why, "")
+
     def _on_stop(self, c, room, name):
         self._set("stopped", True)
         db.log(self.con, "decision", f"stop by {name}", room_id=room, author=name)

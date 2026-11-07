@@ -1,0 +1,34 @@
+id: h8
+card:
+  lens: contrarian
+  slug: wide-day-fade
+  contribution: method
+  problem: "The live bot (h0, a trend follower) loses on average about -276 pts per session after a day whose range is in the top quartile, against about 0 on other days. Its losing days are choppy ones, where the open-to-close move is a small share of the high-to-low range. The early-session trend after a wide day does not follow through."
+  motivation: "The reference bot's losses point at whoever is on the other side: on the day after a wide range, fading the move since the open from 11:00 earned about +9bp a session for prior range above 1.3 ATR (n=111, t about 2.0, non-negative in every year 2022-2026; my scan, not a result). That is the regime where trend bets keep losing. It differs from h5 (a 60-bar z-score fade on any day) and h6 (a break of the previous day's range): it is a once-a-day fade gated by how wide yesterday was."
+  approach: "On sessions after a wide-range day, at 11:00 fade the direction of the move since the open and hold to 15:15, with a take-profit cap."
+  plan: "Features ph = prev_day(high), pl = prev_day(low), a = atr(days 14), r = ret_since(anchor session_open), m = minute_of_day. Entry at m == 105 (11:00): short if r > 0 and (ph - pl) / a > p.w, long if r < 0 and (ph - pl) / a > p.w, max_per_day 1. Exit take_atr 1.0, stop_atr 1.0, time 15:15. CPCV over w in [1.05, 1.3]."
+  mechanism: "After a wide-range day, breakout and trend-following traders (the live bot among them) enter early in the direction of the move, expecting volatility to carry on. The informed part of the move is done the day before, so their flow overshoots and the late morning reverts as liquidity providers, and option writers rebalancing deltas around strikes after the vol spike, take the other side. The trend traders keep paying because their rules ignore yesterday's range, as the live bot's -276 pts/day in this quartile shows."
+  rule: "at minute_of_day == 105, if (prev_day high - prev_day low) / atr > p.w: short if ret_since open > 0, long if < 0; exit take 1 ATR, stop 1 ATR, or 15:15"
+  kill:
+    - "CPCV median path SR <= 0"
+    - "the same fade on days with prior range below the median does as well (ablation of the wide clause), which would mean it is not about yesterday's range"
+    - "gross/costs < 3"
+    - "best 5 days carry >= 50% of net (my uncapped scan had 0.63)"
+instrument: {segment: futures, underlying: NIFTY}
+session: {start: "09:20", end: "15:15"}
+features:
+  ph: {fn: prev_day, field: high}
+  pl: {fn: prev_day, field: low}
+  a: {fn: atr, days: 14}
+  r: {fn: ret_since, anchor: session_open}
+  m: {fn: minute_of_day}
+entry:
+  long: "m == 105 and r < 0 and (ph - pl) / a > p.w"
+  short: "m == 105 and r > 0 and (ph - pl) / a > p.w"
+  max_per_day: 1
+exit: {stop_atr: 1.0, take_atr: 1.0, atr_days: 14, time: "15:15"}
+# card names no sizing; same as the reference example
+sizing: {risk_per_trade: 0.01, capital_inr: 14040000, max_lots: 10}
+params: {w: 1.05}
+# card gives [1.05, 1.3]; schema needs 3 values centred on params.w, so 0.8 is added as the symmetric low point (not sourced by the card)
+grid: {w: [0.8, 1.05, 1.3]}

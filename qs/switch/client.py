@@ -237,6 +237,8 @@ def parse_command(text: str) -> dict | None:
         return {"cmd": cmd, "hid": hid, "spec_path": path} if path == f"specs/{hid}.yaml" else None
     if cmd == "approve" and re.fullmatch(HID, rest):
         return {"cmd": cmd, "hid": rest}
+    if cmd == "close" and (a := re.fullmatch(rf"({HID})\s*(.*)", rest, re.S)):
+        return {"cmd": cmd, "hid": a.group(1), "note": a.group(2).strip()}
     if cmd == "reject" and (a := re.fullmatch(rf"({HID})\s+(.+)", rest, re.S)):
         return {"cmd": cmd, "hid": a.group(1), "note": a.group(2).strip()}
     if cmd == "fork" and (a := re.fullmatch(rf"({HID})\s+({SLUG})", rest)):

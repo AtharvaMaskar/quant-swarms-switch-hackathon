@@ -1,0 +1,30 @@
+id: h4
+card:
+  lens: card
+  slug: expiry-pin-reversion
+  contribution: method
+  problem: "On weekly expiry afternoons, NIFTY tends to stay stuck near large open-interest strikes. Do short-horizon stretches away from the recent mean revert more on expiry days than on other days?"
+  motivation: "Ni, Pearson and Poteshman (JFE 2005) document pinning of underlyings to strikes at option expiry. Avellaneda and Lipkin (2003) model it as delta hedging by option holders who are long gamma. NIFTY weekly options carry very large open interest, so the hedging pressure on expiry afternoons should be big. This is the long-gamma counterpart to h1's short-gamma momentum card and uses a different signal (a zscore of price, not the return since the previous close), restricted to dte == 0."
+  approach: "On expiry day after 13:00, fade 1m closes that sit more than k sigma from their 30-bar mean."
+  plan: "Feature cz = zscore(close, 30) and dte. Entry only when dte == 0 and minute_of_day >= 225 (13:00). At most 3 trades per day, stop_atr 0.75 / take_atr 0.75 (atr_days 14), time exit 15:20. CPCV over zthr. A control run with the same rule on dte >= 2 days should show weaker results."
+  mechanism: "Holders and writers who are net long gamma near the pinned strike sell into rises and buy into dips to stay delta-neutral, and gamma becomes very large as expiry nears. Directional intraday traders chasing the move pay the hedgers who supply this reversion."
+  rule: "long: dte == 0 and minute_of_day >= 225 and cz < -p.zthr; short: dte == 0 and minute_of_day >= 225 and cz > p.zthr; exit stop/take 0.75 ATR or 15:20"
+  kill:
+    - "CPCV median path SR <= 0 after costs"
+    - "the same rule on dte >= 2 days has an equal or higher SR, which would mean it is not expiry pinning"
+    - "fewer than 100 trades in the research window, too thin to judge"
+instrument: {segment: futures, underlying: NIFTY}
+session: {start: "09:20", end: "15:20"}
+features:
+  cz: {fn: zscore, field: close, n: 30}
+  d: {fn: dte}
+  m: {fn: minute_of_day}
+entry:
+  long: "d == 0 and m >= 225 and cz < -p.zthr"
+  short: "d == 0 and m >= 225 and cz > p.zthr"
+  max_per_day: 3
+exit: {stop_atr: 0.75, take_atr: 0.75, atr_days: 14, time: "15:20"}
+# card names no sizing; same as the reference example
+sizing: {risk_per_trade: 0.01, capital_inr: 14040000, max_lots: 10}
+params: {zthr: 2.0}
+grid: {zthr: [1.5, 2.0, 2.5]}

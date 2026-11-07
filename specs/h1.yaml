@@ -1,23 +1,30 @@
 id: h1
 card:
-  slug: gamma-intraday-momentum
+  lens: lead
+  slug: late-day-momentum
   contribution: replication
-  problem: "Does the return from the previous close up to 15:00 predict the direction of the last 30 minutes in NIFTY futures?"
-  motivation: "Baltussen, Da, Lammers and Martens (JFE 2021, 'Hedging demand and market intraday momentum') find this across 60+ futures markets, and it is strongest where option dealers are net short gamma. NIFTY weekly options are among the most traded in the world, so dealer hedging flow should be heavy here. Our ORB example only reads the move from the open; this card trades only the closing window and keeps the overnight gap in the signal."
-  approach: "At 15:00 take the sign of the return since the previous close, ride it to 15:25, and only act when the move is big enough to force hedging."
-  plan: "Feature ret_pc = ret_since(anchor prev_close). Entry is only allowed when minute_of_day is at least 345 (15:00 if the session starts at 09:15), one trade per day, time exit 15:25. CPCV over thr. Split the results by dte <= 1 versus the rest, since gamma peaks near expiry."
-  mechanism: "Option market makers who are short gamma have to buy into rallies and sell into falls to stay delta-hedged, and most of that rebalancing lands near the close. Leveraged-ETF and fund rebalancing push in the same direction. They pay because hedging is a constraint on them, not a bet."
-  kill: ["CPCV median path SR <= 0 after costs", "the dte <= 1 subset has a lower hit rate than dte > 1, which contradicts the gamma mechanism", "fails the cost ratio"]
+  problem: "Does NIFTY's return from yesterday's close to 15:00 predict the direction of the last 25 minutes, giving many small, evenly spread bets instead of a few event days?"
+  motivation: "Post-mortems from the earlier gap family (gap-and-go and its 5 filters) all failed concentration (best 5 days carried 79-315% of net) and DSR: one open-time bet on rare big gaps lets a handful of days drive P&L. A signal that trades almost every day with a short, capped hold attacks that failure directly. Gao, Han, Li and Zhou (2018, JFE) find the market's intraday return predicts the last half-hour return in SPY, and the effect is strongest on high-vol days; NSE index futures, with heavy short-dated option writing, are a natural out-of-sample test."
+  approach: "At 15:00, trade NIFTY futures in the direction of the return since the previous close when its size exceeds thr, and exit flat at 15:25."
+  plan: "Features ret_day = ret_since(anchor prev_close) and minute_of_day; entry only at minute_of_day == 15:00, long if ret_day > p.thr, short if ret_day < -p.thr, max_per_day 1; exit at time 15:25 with a 1 ATR stop. Research-window CPCV over thr in [0, 0.002, 0.004]; demo gate."
+  mechanism: "Option writers who are short gamma into expiry and intraday-levered traders who must cut by the close hedge or exit in the direction of the day's move in the last half hour; late-informed and infrequent rebalancers (passive and institutional flow executing at or near the close) also trade with the day's move. They pay because their flow is forced by the clock, not by price."
+  rule: "minute_of_day == 900 and ret_day > p.thr -> long; ret_day < -p.thr -> short; exit at 15:25 or 1 ATR stop"
+  kill:
+    - "CPCV median path SR <= 0"
+    - "gross/costs < 3 (the 25-minute hold makes cost the main risk)"
+    - "best 5 days carry >= 50% of net, i.e. it fails the same concentration check that killed the gap family"
+    - "thr=0 (sign only) has non-positive SR, meaning only a size filter makes it work"
 instrument: {segment: futures, underlying: NIFTY}
 session: {start: "09:20", end: "15:25"}
 features:
-  ret_pc: {fn: ret_since, anchor: prev_close}
+  ret_day: {fn: ret_since, anchor: prev_close}
+  m: {fn: minute_of_day}
+# card's "900" means 15:00 wall clock; minute_of_day counts from 09:15, so 15:00 is 345 (signal on the 15:00 bar, fill 15:01)
 entry:
-  long: "minute_of_day >= 345 and ret_pc > p.thr"
-  short: "minute_of_day >= 345 and ret_pc < -p.thr"
+  long: "m == 345 and ret_day > p.thr"
+  short: "m == 345 and ret_day < -p.thr"
   max_per_day: 1
-# stop_atr is required by the schema; the card names no stop, so 1.0 daily ATR acts as a disaster stop over a 25-minute hold
 exit: {stop_atr: 1.0, atr_days: 14, time: "15:25"}
 sizing: {risk_per_trade: 0.01, capital_inr: 14040000, max_lots: 10}
-params: {thr: 0.0025}
-grid: {thr: [0.0, 0.0025, 0.005]}
+params: {thr: 0.002}
+grid: {thr: [0.0, 0.002, 0.004]}

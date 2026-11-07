@@ -43,7 +43,7 @@ The hierarchy (families, patches, forks, trial counts) lives in `research.db` an
 | **Roles** | `proposer`, `judge`, `coder`, `verifier`, `validator`, `reader`, each with role instructions from the template. |
 | **Registered `always_on` agent over HTTP + SSE** | The orchestrator is our own Python process, registered once with `scripts/switch_register.py`. It listens to **all** room messages on `GET /agents/{id}/events` and acts through `POST /agents/{id}/ops/{op}` (post, mention, thread, create room, read context, download media). It is the deterministic state machine Switch itself doesn't have. |
 | **@-mention hand-offs** | Every step is an @-mention: `@coder` builds, `@verifier` checks, `@validator` explains, `@judge` compares, `@proposer-lead` writes the post-mortem. |
-| **Sign-off in the thread** | The orchestrator @-mentions the humans with the full report. Only names passed in `--humans` (Slack display names) can `approve`, `reject`, `stop` or `resume`. Each decision is stored as calibration data. |
+| **Sign-off in the thread** | The orchestrator @-mentions the humans with the full report. Only names passed in `--humans` (Slack display names) can `approve`, `reject`, `close`, `stop` or `resume`. Each decision is stored as calibration data. |
 | **Media store** | SSRN papers arrive as a PDF attached in the thread; the orchestrator pulls it from Switch's media store on `deflate attach <lit_id>`. |
 | **Slack bridge** | The only UI. Switch carries every agent and human message between Slack and the agents. |
 
@@ -234,6 +234,7 @@ Why `deflate` first: the orchestrator is registered with Switch's bootstrap regi
 | `verified h12 round 3: <note>` | verifier | run the research trial through the gate |
 | `deflate approve h12` | humans only | sign off and start the paper desk, which reports in the hypothesis thread |
 | `deflate reject h12 <note>` | humans only | reject; the note is stored as calibration |
+| `deflate close h12 <note>` | humans only | end a hypothesis that won't be patched further: a hard stop with a post-mortem, which lets the next round start |
 | `deflate fork h12 <slug>` | anyone | fork a dead or retired hypothesis into `h12.1` (same family, new thread) |
 | `deflate status` | anyone | list hypotheses and statuses |
 | `deflate stop` / `resume` | humans only | stop or resume opening threads and rounds |

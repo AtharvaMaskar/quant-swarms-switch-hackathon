@@ -1,0 +1,34 @@
+id: h6
+card:
+  lens: lead
+  slug: prev-range-break
+  contribution: method
+  problem: "The gap family and h2 bet on the open or the whole session, so their P&L hinged on a few big gap days (concentration 1.00-3.14). Breaks of yesterday's high or low that happen inside the session, on days that opened inside yesterday's range, have not been tested at all."
+  motivation: "Lesson from h1.2-h1.2.5: continuation existed but was carried by a few large-gap days and failed concentration and DSR. Removing gap days and requiring the break to happen during the session isolates a different event. A 1 ATR take cap stops any single trend day from carrying the net, which is the check every predecessor failed. The quiet-open clause reuses the gap family's own finding that gaps under ~0.3% behaved as noise."
+  approach: "On days that open within 0.3% of yesterday's close, go long on the first 1-minute close above yesterday's high (short below yesterday's low) after 09:45, with a 0.5 ATR stop, a 1 ATR take and flat at 15:15."
+  plan: "Features ph = prev_day(high), pl = prev_day(low), g = gap_pct, m = minute_of_day, atr(days 14). Entry long: close > ph and abs(g) < p.g and m >= 30; short: close < pl and abs(g) < p.g and m >= 30; max_per_day 1. Exit stop_atr 0.5, take_atr 1.0, time 15:15. CPCV over g in [0.002, 0.003, 0.005]; demo gate."
+  mechanism: "Stop-loss and breakout buy-stop orders cluster just beyond the prior day's extremes (Osler 2005, stop-loss cascades in FX). When an in-session move reaches them, the triggered market orders push price further, and late breakout traders follow. The stop holders pay because their orders are placed for risk control, not price."
+  rule: "long: close > prev_day high and abs(gap_pct) < p.g and minute_of_day >= 30; short mirror at prev_day low; stop 0.5 ATR, take 1 ATR, exit 15:15"
+  kill:
+    - "CPCV median path SR <= 0"
+    - "best 5 days carry >= 50% of net despite the 1 ATR take cap"
+    - "dropping the abs(gap_pct) clause does not hurt (ablation), i.e. it is just the gap family again"
+    - "gross/costs < 3"
+instrument: {segment: futures, underlying: NIFTY}
+session: {start: "09:20", end: "15:15"}
+features:
+  # raw close is not an expression name; sma(close, 1) is the 1-minute close itself
+  c: {fn: sma, field: close, n: 1}
+  ph: {fn: prev_day, field: high}
+  pl: {fn: prev_day, field: low}
+  g: {fn: gap_pct}
+  m: {fn: minute_of_day}
+entry:
+  long: "c > ph and abs(g) < p.g and m >= 30"
+  short: "c < pl and abs(g) < p.g and m >= 30"
+  max_per_day: 1
+exit: {stop_atr: 0.5, take_atr: 1.0, atr_days: 14, time: "15:15"}
+# card names no sizing; same as the reference example
+sizing: {risk_per_trade: 0.01, capital_inr: 14040000, max_lots: 10}
+params: {g: 0.003}
+grid: {g: [0.002, 0.003, 0.005]}
