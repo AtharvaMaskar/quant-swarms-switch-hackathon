@@ -93,7 +93,7 @@ def test_templates_v2():
         assert doc["version"] == 2
         (room,) = [r for r in doc["resources"].values() if r["type"] == "room"]
         assert "{hid}" in room["kickoff"] and "round {round}" in room["kickoff"]
-        assert room["users"] == ["{$creator}"]
+        assert room["users"] == ["{human}"] and room["bridge"] == "{bridge}"
     hyp = yaml.safe_load((ROOT / "templates/hypothesis-room.v2.yaml").read_text())["resources"]["hyp"]
     assert {r["name"] for r in hyp["roles"] if r["exclusive"]} == {"coder", "verifier", "validator"}
 
@@ -156,6 +156,6 @@ def test_lit_template_v2():
     (room,) = [r for r in doc["resources"].values() if r["type"] == "room"]
     assert "kickoff" not in room          # the orchestrator kicks the reader off once the paper is parsed
     assert doc["params"]["bridge"] == {**doc["params"]["bridge"], "type": "bridge", "default": ["Slack", "$first"]}
-    assert room["bridge"] == "{bridge}" and room["users"][0] == {"if": "{bridge}", "value": ["{$creator}"]}
+    assert room["bridge"] == "{bridge}" and room["users"] == ["{human}"]
     assert "{reader}" in room["agents"]
     assert {r["name"] for r in room["roles"] if r["exclusive"]} == {"reader"}
