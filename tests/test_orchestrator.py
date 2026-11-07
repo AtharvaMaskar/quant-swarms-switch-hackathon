@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 import yaml
 
-from qs import db
+from qs import db, papers
 from qs.orchestrator import Orchestrator
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -74,7 +74,10 @@ def msg(body, sender="coder", room=CTL):
 
 
 @pytest.fixture
-def env(tmp_path):
+def env(tmp_path, monkeypatch):
+    def offline(ref, out_root="papers", client=None):   # no network in these tests; test_papers covers fetch
+        raise papers.PaperError("offline test")
+    monkeypatch.setattr(papers, "fetch", offline)
     con = db.connect(tmp_path / "r.db")
     runner, desks = StubRunner(), []
     cfg = {"humans": [HUMAN], "control_room": CTL, "root": tmp_path, "build_cap": 2, "gate": "demo"}

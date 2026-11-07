@@ -15,7 +15,7 @@ from typing import Any, Callable
 
 import pandas as pd
 
-from qs import db, ids, memory
+from qs import db, ids, memory, papers
 from qs.spec import SpecError, load_spec, spec_sha
 from qs.switch.client import SLUG, kickoff_text, parse_command
 
@@ -387,12 +387,68 @@ class Orchestrator:
         if not pid:
             return self._post(room, f"{ids.next_root(self.con)} round {r}: implement needs an arXiv or SSRN url/id")
         lit_id, url = pid
-        if lit := self._meta(f"lit:{lit_id}"):
-            return self._post(room, f"{lit_id} round {r}: already open in lit-{lit_id} ({lit})")
-        rid = self._do("create_room", template_yaml=LIT_TEMPLATE.read_text(),
-                       inputs={"lit_id": lit_id, "room": f"lit-{lit_id}", "round": r, "url": url})["room_id"]
-        self._set(f"lit:{lit_id}", rid)
-        self._do("link", child_room=rid, parent_room=self.ctl, label=f"paper {lit_id}")
-        db.log(self.con, "reference", json.dumps({"lit_id": lit_id, "url": url, "ref": c["ref"], "by": name}),
+        if rid := self._meta(f"lit:{lit_id}"):
+            self._post(room, f"{lit_id} round {r}: already open in lit-{lit_id} ({rid})")
+            if self._meta(f"litpaper:{lit_id}"):
+                return
+        else:
+            rid = self._do("create_room", template_yaml=LIT_TEMPLATE.read_text(),
+                           inputs={"lit_id": lit_id, "room": f"lit-{lit_id}", "round": r, "url": url})["room_id"]
+            self._set(f"lit:{lit_id}", rid)
+            self._do("link", child_room=rid, parent_room=self.ctl, label=f"paper {lit_id}")
+            db.log(self.con, "reference", json.dumps({"lit_id": lit_id, "url": url, "ref": c["ref"], "by": name}),
+                   room_id=rid, author=name)
+            self._post(room, f"{lit_id} round {r}: lit room lit-{lit_id} opened for {name}")
+        try:
+            p = papers.fetch(c["ref"], out_root=self.root / "papers")
+        except Exception as e:   # network, parse or not-found: the human can still attach the PDF
+            return self._ask_pdf(rid, lit_id, r, f"fetch failed: {e}")
+        if papers.blocked(p):
+            return self._ask_pdf(rid, lit_id, r, "SSRN blocked the automated download")
+        self._paper_ready(rid, lit_id, r, p)
+
+    def _ask_pdf(self, rid, lit_id, r, why):
+        n = self._meta(f"litask:{lit_id}", 0) + 1          # keeps repeated requests distinct
+        self._set(f"litask:{lit_id}", n)
+        self._post(rid, f"{lit_id} round {r}: could not read the paper ({why}; request #{n}). Please attach the "
+                        f"PDF in this room, then send `@orchestrator attach {lit_id}`.")
+
+    def _on_attach(self, c, room, name):
+        lit_id, r = c["lit_id"], self.round
+        if not (rid := self._meta(f"lit:{lit_id}")):
+            return self._post(room, f"{lit_id} round {r}: no lit room yet; send `@orchestrator implement <url|id>` first")
+        ctx = self._do("read_context", room_id=rid, limit=50) or {}
+        files = [(e.get("timestamp") or 0, a) for t in ctx.get("threads", []) for e in [t.get("root") or {}, *t.get("replies", [])]
+                 for a in e.get("attachments") or []
+                 if "pdf" in (a.get("mimetype") or "") or (a.get("filename") or "").lower().endswith(".pdf")]
+        if not files:
+            return self._ask_pdf(rid, lit_id, r, "no PDF attachment found in the room")
+        att = max(files, key=lambda x: x[0])[1]
+        try:
+            data = self._do("download_media", room_id=rid, mxc=att["mxc"])
+            p = papers.fetch_pdf(data, lit_id, out_root=self.root / "papers")
+        except Exception as e:
+            return self._ask_pdf(rid, lit_id, r, f"{att.get('filename', 'attachment')}: {e}")
+        db.log(self.con, "reference", json.dumps({"lit_id": lit_id, "pdf": att.get("filename"), "by": name}),
                room_id=rid, author=name)
-        self._post(room, f"{lit_id} round {r}: lit room lit-{lit_id} opened for {name}")
+        self._paper_ready(rid, lit_id, r, p)
+
+    def _paper_ready(self, rid, lit_id, r, p):
+        """Summary card in the lit room, then the reader's kickoff (the template has none: files come first)."""
+        self._set(f"litpaper:{lit_id}", True)
+        d = f"papers/{lit_id}"
+        key = sorted(p.equations, key=lambda e: (not e.get("label"), len(e["latex"]) < 12, e["n"]))[:3]
+        key.sort(key=lambda e: e["n"])
+        abstract = p.abstract if len(p.abstract) <= 700 else p.abstract[:700].rsplit(" ", 1)[0] + " …"
+        eqs = ("\n```latex\n" + "\n\n".join(f"% E{e['n']}{' ' + e['label'] if e.get('label') else ''}\n{e['latex']}"
+                                               for e in key) + "\n```") if key else ""
+        exact = "exact LaTeX" if p.method in ("latex", "html") else "approximate PDF text; check paper.pdf"
+        files = [f"{d}/paper.md", f"{d}/equations.md"] + ([f"{d}/paper.pdf"] if p.pdf_path else [])
+        notes = [n for n in p.notes if not n.startswith("macros_expanded")]
+        self._post(rid, f"{lit_id} round {r}: paper parsed ({p.method})\n"
+                        f"**{p.title or lit_id}**\n{', '.join(p.authors) or 'authors unknown'} · {p.published or 'date unknown'}\n"
+                        f"Abstract: {abstract or '(none found)'}\n"
+                        f"Equations: {len(p.equations)} ({exact}){'; key ones:' if key else ''}{eqs}\n"
+                        f"Files: {', '.join(files)}" + (f"\nNotes: {'; '.join(notes)}" if notes else ""))
+        self._ask(rid, "reader", f"@reader {lit_id} round {r}: read {d}/paper.md and equations.md "
+                                 f"(paper.pdf for figures), run the memory queries, then brainstorm with the human here.")

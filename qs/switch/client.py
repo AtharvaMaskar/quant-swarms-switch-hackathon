@@ -18,6 +18,7 @@ import httpx
 NAME_RE = re.compile(r"^[a-z0-9][a-z0-9._-]*$")
 HID = r"h\d+(?:\.\d+){0,3}(?:v(?:[2-9]|[1-9]\d+))?"   # h12, h12v2, h12.1, h12.1.2v3
 SLUG = r"[a-z0-9]+(?:-[a-z0-9]+){0,2}"                 # at most 3 words
+LIT = r"arxiv-\d{4}-\d{4,5}|ssrn-\d+"                  # memory.paper_id lit ids
 
 # Our process is reachable independent of any room: always_on. register-known only takes
 # provider types (claude-code, codex...), so a custom agent registers via POST /agents.
@@ -97,6 +98,16 @@ class SwitchAgent:
 
     def link(self, child_room: str, parent_room: str, label: str) -> dict:
         return self.op("link_rooms", source_room_id=child_room, target_room_id=parent_room, label=label)
+
+    def read_context(self, room_id: str, limit: int = 50) -> dict:
+        """{threads: [{root, replies}], ...}; entries carry `attachments` [{filename, mimetype, mxc, ...}]."""
+        return self.op("read_context", room_id=room_id, limit=limit)
+
+    def download_media(self, room_id: str, mxc: str) -> bytes:
+        """Attachment bytes from Switch's media store (attachments are pointers, never bytes)."""
+        r = self.http.get(f"/agents/{self.agent_id}/rooms/{room_id}/media", params={"mxc": mxc})
+        r.raise_for_status()
+        return r.content
 
     def archive(self, room_id: str) -> dict:
         return self.op("archive_room", room_id=room_id)
@@ -202,6 +213,8 @@ def parse_command(text: str) -> dict | None:
         return {"cmd": cmd, "hid": a.group(1), "slug": a.group(2)}
     if cmd == "implement" and re.fullmatch(r"\S+", rest):
         return {"cmd": cmd, "ref": rest}   # the orchestrator parses the arXiv/SSRN id
+    if cmd == "attach" and re.fullmatch(LIT, rest):
+        return {"cmd": cmd, "lit_id": rest}   # latest PDF attachment in that lit room
     return None
 
 

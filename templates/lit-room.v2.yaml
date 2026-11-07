@@ -1,5 +1,5 @@
 # One room per paper (design §5a). Created by the orchestrator on `@orchestrator implement <url|id>`
-# and linked to control. The reader and the human brainstorm here with memory; cards proposed
+# and linked to control, on the messaging bridge, with the tagging human invited. The reader and the human brainstorm here with memory; cards proposed
 # from this room carry `source`, and their hypothesis rooms link back with "from paper".
 version: 2
 params:
@@ -14,6 +14,11 @@ params:
   round: {type: number, description: Loop round}
   url: {type: string, description: Canonical paper URL (arXiv abs page or SSRN abstract page)}
   repo_url: {type: string, default: "https://github.com/AtharvaMaskar/quant-swarms-switch-hackathon"}
+  bridge:
+    type: bridge
+    description: Messaging app the room is created on (Slack when set up, else the server's first, e.g. Mattermost)
+    default: [Slack, $first]
+    required: false
   reader: {type: agent, default: reader}
   orchestrator: {type: agent, default: orchestrator}
 resources:
@@ -21,8 +26,13 @@ resources:
     type: room
     name: "{room}"
     description: "Paper {lit_id}: read, brainstorm with memory, propose cards."
+    bridge: "{bridge}"
     agents: ["{reader}", "{orchestrator}"]
-    users: ["{$creator}"]
+    # the human joins on the messaging app; a server with no bridge has nobody to invite
+    users:
+      - if: "{bridge}"
+        value: ["{$creator}"]
+      - value: []
     instructions: |
       Paper {lit_id} ({url}). The reader writes the paper card, runs the memory queries, and
       brainstorms with the human in short turns. Cards are proposed only when the human says
@@ -42,4 +52,5 @@ resources:
         description: The research repo (agents/reader.md, feature registry, memory CLI)
         instructions: Read it. Do not push.
         value: {urls: ["{repo_url}"]}
-    kickoff: "@{reader} {lit_id} round {round}: read and brainstorm {url}"
+    # no kickoff: the orchestrator parses the paper into papers/{lit_id}/ first, then posts the
+    # summary card and `@reader {lit_id} round {round}: read papers/...` itself (qs/orchestrator.py)

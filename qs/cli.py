@@ -99,9 +99,15 @@ def main(argv=None) -> None:
     m.add_parser("show").add_argument("hid")
     m.add_parser("deadends").add_argument("--limit", type=int, default=20)
     m.add_parser("features")
+    sub.add_parser("paper").add_subparsers(dest="pcmd", required=True).add_parser("fetch").add_argument("ref")
     a = ap.parse_args(argv)
     a.db = os.path.abspath(a.db)
 
+    if a.cmd == "paper":
+        from qs import papers
+        p = papers.fetch(a.ref, out_root=ROOT / "papers")
+        return _out({"lit_id": p.lit_id, "title": p.title, "method": p.method, "n_equations": len(p.equations),
+                     "paths": {"md": p.md_path, "equations": p.equations_path, "pdf": p.pdf_path}, "notes": p.notes})
     if a.cmd == "memory" and a.mcmd == "features":
         return _out(memory.features())
     con = db.connect(a.db)

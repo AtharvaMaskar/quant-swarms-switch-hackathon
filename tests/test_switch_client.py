@@ -136,6 +136,7 @@ def test_parse_verified_judged_implement():
         "cmd": "judged", "hid": "h12.1", "round": 2, "prefer": "B", "reason": "simpler"}
     assert p("@orchestrator implement arxiv.org/abs/2611.03424") == {
         "cmd": "implement", "ref": "arxiv.org/abs/2611.03424"}
+    assert p("@orchestrator attach ssrn-4567890") == {"cmd": "attach", "lit_id": "ssrn-4567890"}
     for bad in (
         "@coder h12 round 1: not verified yet",
         "verified h12: no round",
@@ -143,6 +144,8 @@ def test_parse_verified_judged_implement():
         '@orchestrator h12 round 2: {"prefer": "A"',
         "@orchestrator implement",
         "@orchestrator implement two words",
+        "@orchestrator attach h12",
+        "@orchestrator attach arxiv-2611",
     ):
         assert p(bad) is None, bad
 
@@ -151,6 +154,8 @@ def test_lit_template_v2():
     doc = yaml.safe_load((ROOT / "templates/lit-room.v2.yaml").read_text())
     assert doc["version"] == 2
     (room,) = [r for r in doc["resources"].values() if r["type"] == "room"]
-    assert "{lit_id}" in room["kickoff"] and "round {round}" in room["kickoff"]
-    assert room["users"] == ["{$creator}"] and "{reader}" in room["agents"]
+    assert "kickoff" not in room          # the orchestrator kicks the reader off once the paper is parsed
+    assert doc["params"]["bridge"] == {**doc["params"]["bridge"], "type": "bridge", "default": ["Slack", "$first"]}
+    assert room["bridge"] == "{bridge}" and room["users"][0] == {"if": "{bridge}", "value": ["{$creator}"]}
+    assert "{reader}" in room["agents"]
     assert {r["name"] for r in room["roles"] if r["exclusive"]} == {"reader"}
