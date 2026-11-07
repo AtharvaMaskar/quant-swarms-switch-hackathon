@@ -102,11 +102,30 @@ class Orchestrator:
         c = parse_command(p.get("body", ""))
         if c is None:
             return []
+        mid = p.get("message_id")
+        if mid:                                     # the stream and the startup backlog can both deliver it
+            seen = self._meta("seen_msgs", [])
+            if mid in seen:
+                return []
+            self._set("seen_msgs", (seen + [mid])[-500:])
         if c["cmd"] in HUMAN_ONLY and name not in self.cfg.get("humans", []) and sender not in self.cfg.get("humans", []):
             return []
         room = msg.get("room_id") or self.ctl
         getattr(self, f"_on_{c['cmd']}")(c, room, name)
         return self._acts
+
+    def replay(self, room_id: str, limit: int = 30) -> None:
+        """Handle commands already posted in `room_id` (e.g. while we were down), oldest first."""
+        ctx = self.agent.op("read_context", limit=limit, room_id=room_id)
+        roots = [t["root"] for t in ctx.get("threads", []) if t.get("root")]
+        for m in sorted(roots, key=lambda m: m.get("ts") or m.get("created_at") or ""):
+            env = {"type": "message", "room_id": room_id,
+                   "payload": {"sender": m.get("sender"), "sender_name": m.get("sender_name"),
+                               "body": m.get("body", ""), "message_id": m.get("id")}}
+            try:
+                self.handle(env)
+            except Exception:
+                log.exception("replay failed on %s", m.get("id"))
 
     def run(self) -> None:
         for ev in self.agent.events():

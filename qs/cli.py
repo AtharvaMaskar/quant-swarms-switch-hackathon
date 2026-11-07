@@ -84,7 +84,9 @@ def run_orchestrator(con, a) -> None:
     cfg = {"humans": humans, "control_room": ctl, "build_cap": a.build_cap, "gate": "demo" if a.demo else "real",
            "gate_cfg": gate_cfg}
     print(f"orchestrator up: control {ctl}, humans {humans}, gate {cfg['gate']}", file=sys.stderr)
-    Orchestrator(con, agent, cfg, desk=desk).run()
+    orch = Orchestrator(con, agent, cfg, desk=desk)
+    orch.replay(ctl)          # pick up commands posted while the orchestrator was down
+    orch.run()
 
 
 def main(argv=None) -> None:

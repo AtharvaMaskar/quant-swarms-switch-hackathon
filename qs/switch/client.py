@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import itertools
 import json
+import os
 import re
 import threading
 import time
@@ -137,7 +138,7 @@ class SwitchAgent:
             if self.cursor is not None:
                 headers["Last-Event-ID"] = str(self.cursor)
             params = {"connection_id": self.connection_id, "scope": "all",
-                      "filter": "addressed", "start_from": "head"}
+                      "filter": os.environ.get("QS_EVENT_FILTER", "all"), "start_from": "head"}
             try:
                 with self.http.stream("GET", url, params=params, headers=headers,
                                       timeout=httpx.Timeout(30, read=60)) as r:

@@ -123,7 +123,7 @@ def test_sse_parse():
     assert ev["room_id"] == "r1" and a.cursor == 8
     q = seen[0].url.params
     assert seen[0].headers["Accept"] == "text/event-stream"
-    assert (q["connection_id"], q["scope"], q["filter"]) == (a.connection_id, "all", "addressed")
+    assert (q["connection_id"], q["scope"], q["filter"]) == (a.connection_id, "all", "all")
 
 
 def test_parse_verified_judged_implement():
