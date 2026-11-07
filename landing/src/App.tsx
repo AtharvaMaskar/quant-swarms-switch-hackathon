@@ -3,8 +3,9 @@ import { MeshGradient } from '@paper-design/shaders-react'
 import { start } from './engine.ts'
 import { expectedMaxSharpe } from './stats.ts'
 import { NAME, SWITCH_URL, GITHUB_URL, STAGES, CHECKS, gate, CANDIDATES, BOARD, FAQ } from './data.ts'
-import { useBeat, useCountUp, useInView, useReveal } from './hooks.ts'
+import { useBeat, useInView, useReveal } from './hooks.ts'
 import { Hero, Nav, Ticker } from './Hero.tsx'
+import { BigMarquee, DitherBg, GrainBg, Odometer, startMotion, useFlip } from './fx.tsx'
 
 const clamp = (v: number) => Math.max(0, Math.min(1, v))
 type Theme = 'dark' | 'paper' | 'electric'
@@ -26,6 +27,7 @@ function Pin({ beat, id, vh = 220, p, children, flip = false, theme }: { beat: s
   return (
     <section className={`pin ${theme} dots ${flip ? 'flip' : ''}`} data-beat={beat} data-theme={theme} data-pin id={id} ref={p as React.RefObject<HTMLElement>} style={{ height: `${vh}vh` }}>
       <div className="sticky">
+        {theme === 'dark' && <DitherBg />}
         <div className="pin-text layer">{children}</div>
         <div className="pin-stage" data-stage aria-hidden="true" />
       </div>
@@ -43,8 +45,8 @@ function Cheap() {
       <Label n="01">The problem</Label>
       <p className="speaker" data-reveal>I’m an AI engineer building ML and quant algorithms for retail and HNI investors at a fintech.</p>
       <Mask lines={['Strategies', 'got cheap.', <>Alpha got <em>scarce.</em></>]} />
-      <div className="spec-panel" data-reveal>
-        <div className="sp-row"><span>STRATEGIES ON THE FLOOR</span><b className="tab">{n.toLocaleString('en-IN')}</b></div>
+      <div className="spec-panel" data-pop>
+        <div className="sp-row"><span>STRATEGIES ON THE FLOOR</span><b className="tab"><Odometer value={n.toLocaleString('en-IN')} /></b></div>
         <div className="sp-row"><span>HOW LONG AN EDGE LASTS</span><b>{life}</b></div>
         <div className="tl-track"><div className="tl-bar" style={{ width: `${100 - 92 * clamp(p / 0.8)}%` }} /></div>
         <div className="sp-row small"><span>4–5 YEARS AGO: MONTHS</span><span>NOW: WEEKS, OR DAYS</span></div>
@@ -79,7 +81,7 @@ function Ours() {
     <Pin beat="ours" p={ref} vh={200} theme="paper">
       <Label n="03">Our own swarm</Label>
       <Mask lines={['Found', 'nothing.']} />
-      <div className="huge-num" data-reveal><b className="tab">{standing}</b><span>{standing ? `OF 259 STILL STANDING ON THE HOLDOUT` : '259 PROPOSED · 0 PROMOTED'}</span></div>
+      <div className="huge-num" data-reveal><b className="tab"><Odometer value={String(standing).padStart(3, '0')} /></b><span>{standing ? `OF 259 STILL STANDING ON THE HOLDOUT` : '259 PROPOSED · 0 PROMOTED'}</span></div>
       <p className="body" data-reveal>Its training winners inverted on the holdout. Being long in a rising market had looked like skill.</p>
     </Pin>
   )
@@ -138,7 +140,7 @@ function Loop() {
     <Pin beat="loop" id="loop" p={ref} vh={260} theme="dark">
       <Label n="06">The loop</Label>
       <Mask lines={['Agents propose.', 'Code decides.']} />
-      <div className="now" data-reveal aria-live="polite">
+      <div className="now repop" aria-live="polite" key={active}>
         <span className="mlabel tab">STAGE {String(active + 1).padStart(2, '0')} / 10</span>
         <b>{STAGES[active][0]}</b><span className="desc">{STAGES[active][1]}</span>
       </div>
@@ -150,7 +152,6 @@ function Gate() {
   const [on, setOn] = useState(() => [...gate.on])
   const [ref, seen] = useInView<HTMLDivElement>(0.4)
   const survivors = CHECKS.reduce((n, c, i) => (on[i] ? n * c.rate : n), CANDIDATES)
-  const shown = useCountUp(survivors, seen, 900)
   function toggle(i: number) {
     const next = on.map((v, j) => (j === i ? !v : v))
     gate.on = next; setOn(next); dispatchEvent(new Event('gatechange'))
@@ -162,14 +163,14 @@ function Gate() {
         <Mask lines={['Twelve checks.', 'Switch any off.']} />
         <p className="body" data-reveal>Deterministic code, no model in the loop. Each band catches what fails it. Pass rates are illustrative; the checks follow López de Prado’s <em>Advances in Financial Machine Learning.</em></p>
         <div className="tally" ref={ref} data-reveal>
-          <b className="tab">{Math.round(shown)}</b>
+          <b className="tab"><Odometer value={String(seen ? Math.round(survivors) : CANDIDATES).padStart(3, '0')} /></b>
           <span>OF {CANDIDATES} CANDIDATES<br />REACH PAPER TRADING</span>
         </div>
-        <div className="console" data-ui>
+        <div className="console" data-ui data-pop>
           <div className="console-head"><span>CHECK</span><span>KEEPS</span><span>ON</span></div>
           <ul>
             {CHECKS.map((c, i) => (
-              <li key={c.name} className={on[i] ? 'on' : ''}>
+              <li key={c.name} className={on[i] ? 'on' : ''} style={{ '--i': i } as React.CSSProperties}>
                 <span className="cn tab">{String(i + 1).padStart(2, '0')}</span>
                 <div><b>{c.name}</b><span>{c.note}</span></div>
                 <span className="keep tab">{c.rate < 1 ? `${Math.round(c.rate * 100)}%` : '—'}</span>
@@ -190,7 +191,7 @@ function Forks() {
     <Pin beat="forks" id="rooms" p={ref} vh={200} flip theme="dark">
       <Label n="08">Rooms and forks</Label>
       <Mask lines={['Forks inherit', 'the count.']} />
-      <div className="huge-num" data-reveal><b className="tab">41</b><span>TRIALS h12.1 IS CHARGED WITH. NEVER 1.</span></div>
+      <div className="huge-num grad" data-reveal><b className="tab">41</b><span>TRIALS h12.1 IS CHARGED WITH. NEVER 1.</span></div>
       <table className="lineage" data-reveal>
         <tbody>
           <tr><td>h12</td><td>hypothesis room</td><td>NEW</td></tr>
@@ -227,7 +228,7 @@ function Costs() {
           <figcaption>BSE, DALAL STREET · PHOTO NIYANTHA SHEKHAR · CC BY 2.0</figcaption>
         </figure>
       </div>
-      <div className="code-card layer" data-reveal data-ui>
+      <div className="code-card layer" data-pop data-tilt data-ui>
         <div className="term-bar"><i /><i /><i /><span>costs/in-fno.yaml</span></div>
         <pre><code>{YAML.split('\n').map((l, i) => {
           const k = l.indexOf('#')
@@ -252,19 +253,26 @@ function Decay() {
   )
 }
 
+// Rows arrive in proposal order, then sort themselves: references first, live by DSR, then retired.
+const RANK = (r: typeof BOARD[number]) => (r.ref ? 0 : r.status.startsWith('retired') ? 2 : 1) * 10 - Number(r.dsr === '—' ? 0 : r.dsr)
 function Board() {
+  const [ref, seen] = useInView<HTMLDivElement>(0.3)
+  const [sorted, setSorted] = useState(false)
+  useEffect(() => { if (seen) { const id = setTimeout(() => setSorted(true), 700); return () => clearTimeout(id) } }, [seen])
+  const rows = sorted ? [...BOARD].sort((x, y) => RANK(x) - RANK(y)) : [BOARD[5], BOARD[2], BOARD[0], BOARD[6], BOARD[3], BOARD[1], BOARD[4]]
+  const flip = useFlip(rows.map(r => r.name))
   return (
     <section className="board paper">
       <div className="board-head layer">
         <div><Label n="11">Leaderboard</Label><Mask lines={['The board.']} /></div>
-        <p className="note" data-reveal>ILLUSTRATIVE ROWS. NO REAL STRATEGY RESULTS. THE LIVE BOT AND BUY-AND-HOLD ARE REFERENCE ROWS.</p>
+        <p className="note" data-reveal>ILLUSTRATIVE ROWS. NO REAL STRATEGY RESULTS. THE LIVE BOT AND BUY-AND-HOLD ARE REFERENCE ROWS. SORTING BY DSR…</p>
       </div>
-      <div className="table-wrap layer" data-reveal data-ui>
+      <div className="table-wrap layer" ref={ref} data-pop data-ui>
         <table>
           <thead><tr><th>ID</th><th>Strategy</th><th>Status</th><th className="num">DSR</th><th className="num">Trials</th><th className="num">Days</th></tr></thead>
           <tbody>
-            {BOARD.map(r => (
-              <tr key={r.name} className={r.ref ? 'ref' : r.status.startsWith('retired') ? 'retired' : 'live'}>
+            {rows.map(r => (
+              <tr key={r.name} ref={flip(r.name)} className={r.ref ? 'ref' : r.status.startsWith('retired') ? 'retired' : 'live'}>
                 <td className="id">{r.ref ? 'REF' : r.name.split(' · ')[0]}</td>
                 <td>{r.ref ? r.name : r.name.split(' · ')[1]}</td>
                 <td><span className="status">{r.status.toUpperCase()}</span></td>
@@ -281,6 +289,7 @@ function Board() {
 function Faq() {
   return (
     <section className="faq dark dots" id="faq">
+      <DitherBg shape="warp" />
       <div className="layer"><Label n="12">FAQ</Label><Mask lines={['Questions', 'from the', 'judges’ table.']} /></div>
       <div className="faq-list layer">
         {FAQ.map(([q, a], i) => (
@@ -300,6 +309,7 @@ function Manifesto() {
   return (
     <section className="manifesto electric" data-beat="manifesto" data-theme="electric" data-pin ref={ref} style={{ height: '220vh' }}>
       <div className="sticky">
+        <GrainBg />
         <p className="mlabel layer">13 / WHY</p>
         <p className="manifesto-text layer">
           {MANIFESTO.map((w, i) => <span key={i} className={`${p > (i / MANIFESTO.length) * 0.7 + 0.05 ? 'on' : ''} ${w.startsWith('creativity') ? 'it' : ''}`}>{w} </span>)}
@@ -319,7 +329,7 @@ function Credits() {
   return (
     <section className="credits paper">
       <div className="layer"><Label n="14">Credits</Label><Mask lines={['Standing on', 'other people’s work.']} /></div>
-      <ul className="layer">{CREDITS.map(([t, d, href], i) => <li key={t} data-reveal><span className="mlabel">C{i + 1}</span>{href ? <a href={href}><b>{t} ↗</b></a> : <b>{t}</b>}<span>{d}</span></li>)}</ul>
+      <ul className="layer">{CREDITS.map(([t, d, href], i) => <li key={t} data-reveal data-tilt><span className="mlabel">C{i + 1}</span>{href ? <a href={href}><b>{t} ↗</b></a> : <b>{t}</b>}<span>{d}</span></li>)}</ul>
     </section>
   )
 }
@@ -344,6 +354,7 @@ function Footer() {
 
 export default function App() {
   useReveal()
+  useEffect(startMotion, [])
   return (
     <>
       <Canvas />
@@ -354,11 +365,13 @@ export default function App() {
         <Cheap />
         <Worse />
         <Ours />
+        <BigMarquee words={['Propose', 'Prove', 'Retire', 'Fork']} />
         <Solution />
         <Paper />
         <Loop />
         <Gate />
         <Forks />
+        <BigMarquee dark words={['Count every trial', 'No appeals']} />
         <Costs />
         <Decay />
         <Board />

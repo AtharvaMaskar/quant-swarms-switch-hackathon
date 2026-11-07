@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { NAME, SWITCH_URL, GITHUB_URL } from './data.ts'
 import { useInView, useTyping } from './hooks.ts'
 import { expectedMaxSharpe } from './stats.ts'
+import { Assemble, DitherBg } from './fx.tsx'
 
 const LINKS = [['Problem', 'problem'], ['Loop', 'loop'], ['Gate', 'gate'], ['Rooms', 'rooms'], ['FAQ', 'faq']] as const
 
@@ -49,7 +50,7 @@ const RAIL = [
 /** The gate verdict as a printed, perforated receipt with a stamp. */
 export function Receipt({ compact = false }: { compact?: boolean }) {
   return (
-    <div className={`receipt ${compact ? 'compact' : ''}`} data-ui>
+    <div className={`receipt ${compact ? 'compact' : ''}`} data-ui data-pop data-tilt>
       <p className="r-head"><span>GATE VERDICT</span><span>h12v5</span></p>
       <p className="r-sub">deterministic · no model in the loop</p>
       <dl>
@@ -68,7 +69,7 @@ export function Receipt({ compact = false }: { compact?: boolean }) {
 function App() {
   const [hover, setHover] = useState<string | null>(null)
   return (
-    <div className="app" data-ui>
+    <div className="app" data-ui data-pop>
       <div className="app-bar">
         <span className="app-title"><span className="dim">Switch /</span> #h12-expiry-mom</span>
         <span className="app-icons"><Icon d="fork" label="Fork room" /><Icon d="collapse" label="Collapse" /><Icon d="share" label="Share" /><Icon d="panel" label="Panel" /><Icon d="more" label="More" /></span>
@@ -77,8 +78,8 @@ function App() {
         <aside className="rail">
           <p className="mlabel">ROOMS</p>
           <ul>
-            {RAIL.map(r => (
-              <li key={r.id} onMouseEnter={() => setHover(r.lineage ?? null)} onMouseLeave={() => setHover(null)}
+            {RAIL.map((r, i) => (
+              <li key={r.id} style={{ '--i': i } as React.CSSProperties} onMouseEnter={() => setHover(r.lineage ?? null)} onMouseLeave={() => setHover(null)}
                 className={`${r.id === 'h12' ? 'cur' : ''} ${hover && r.lineage === hover ? 'glow' : ''}`}>
                 <span className="rn"># {r.name}</span><span className={`rm ${r.live ? 'live' : ''}`}>{r.meta}</span>
               </li>
@@ -89,7 +90,7 @@ function App() {
           <Msg who="proposer" kind="agent" time="09:12">h12: weekly-expiry momentum in NIFTY bank options. Hypothesis and spec attached. <span className="chip">SPEC FROZEN 9f3c</span></Msg>
           <Msg who="coder" kind="agent" time="09:41">h12v5 ready. Patch 4 of 4: the exit leg now pays STT and slippage.</Msg>
           <Msg who="verifier" kind="agent" time="09:44">Look-ahead probe clean. Costs file dated 2026-04-01 applied.</Msg>
-          <div className="msg"><span className="av code">G</span><div><p className="who">gate <span className="time">09:45</span></p><Receipt compact /></div></div>
+          <div className="msg"><span className="av code">G</span><div><p className="who">gate <span className="time">09:45</span></p><div className="receipt-wrap"><Receipt compact /></div></div></div>
           <Msg who="proposer" kind="agent" time="09:46">Proposing fork h12.1 in a new room: banks only, inherits all 41 trials.</Msg>
           <Msg who="risk owner" kind="human" time="09:52">Approved. Open h12.1. <span className="chip ok">SIGNED OFF</span></Msg>
           <div className="msg skeleton" aria-label="coder is drafting the h12.1 spec"><span className="av agent" /><div className="sk"><i /><i /><i /></div></div>
@@ -116,6 +117,7 @@ const TERM = [
   'CPCV     : 9 paths · median SR 0.42',
   'Verdict  : FAIL (DSR 0.71 < 0.95) → hard stop 4/4',
   '> fork h12.1',
+  'Gate     : PASS h12.1 · DSR 0.97 → paper (illustrative)',
 ]
 function Terminal() {
   const [ref, seen] = useInView<HTMLDivElement>(0.5)
@@ -123,7 +125,7 @@ function Terminal() {
   return (
     <div className="term" ref={ref} data-ui aria-label={TERM.join('. ')}>
       <div className="term-bar"><i /><i /><i /><span>deflate — zsh — 120×8</span></div>
-      <pre aria-hidden="true">{typed.map((l, i) => l && <span key={i} className={l.startsWith('>') ? 'cmd' : l.startsWith('Verdict') ? 'bad' : ''}>{l}{'\n'}</span>)}<span className="caret" /></pre>
+      <pre aria-hidden="true">{typed.map((l, i) => l && <span key={i} className={l.startsWith('>') ? 'cmd' : l.startsWith('Verdict') ? 'bad' : l.startsWith('Gate') && l.length === TERM[6].length ? 'ok' : ''}>{l}{'\n'}</span>)}<span className="caret" /></pre>
     </div>
   )
 }
@@ -147,7 +149,7 @@ function Board() {
     return () => removeEventListener('trials', on)
   }, [])
   return (
-    <div className="led" data-ui>
+    <div className="led" data-ui data-pop data-tilt>
       <div className="led-bar"><span><b className="live-dot" /> SWARM · LIVE</span><span className="tab">TRIALS {String(trials).padStart(3, '0')} · LUCK ALONE ⇒ {expectedMaxSharpe(trials).toFixed(2)}σ</span></div>
       <div className="led-stage" data-stage aria-hidden="true" />
       <div className="led-foot"><span>■ AGENT</span><span className="g">■ PASS</span><span className="r">■ FAIL → DROPPED</span></div>
@@ -174,9 +176,10 @@ export function Ticker({ dark = false }: { dark?: boolean }) {
 export function Hero() {
   return (
     <header className="hero dark dots" data-beat="hero" data-theme="dark" id="top">
+      <DitherBg />
       <div className="hero-head layer">
         <p className="mlabel">00 / {NAME.toUpperCase()} — A RESEARCH FLOOR ON SWITCH</p>
-        <h1 className="mega mask"><span><span>Most alpha</span></span><span><span>is <em>luck.</em></span></span></h1>
+        <h1 className="mega assemble" aria-label="Most alpha is luck."><span className="ln" aria-hidden="true"><Assemble text="Most alpha" /></span><span className="ln" aria-hidden="true"><Assemble text="is " start={10} /><em className="luck" style={{ '--i': 13 } as React.CSSProperties}>luck.</em></span></h1>
       </div>
       <div className="hero-row layer">
         <div className="hero-copy">

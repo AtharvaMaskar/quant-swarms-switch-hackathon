@@ -50,7 +50,7 @@ export function useReveal() {
     const io = new IntersectionObserver(es => {
       for (const e of es) if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target) }
     }, { threshold: 0.2, rootMargin: '0px 0px -8% 0px' })
-    document.querySelectorAll('[data-reveal]').forEach(el => io.observe(el))
+    document.querySelectorAll('[data-reveal], [data-pop]').forEach(el => io.observe(el))
     return () => io.disconnect()
   }, [])
 }
