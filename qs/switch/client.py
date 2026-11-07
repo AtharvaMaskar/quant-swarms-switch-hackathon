@@ -103,6 +103,9 @@ class SwitchAgent:
 
     def mention(self, room_id: str, body: str, names=(), roles=(), thread_id: str | None = None) -> dict:
         """send_targeted_message acts on the connection's room, so claim it first."""
+        for n in names:                                   # Switch prepends the @mention itself
+            if body.startswith(f"@{n} "):
+                body = body[len(n) + 2:]
         if "#" in room_id:
             room_id, thread_id = room_id.split("#", 1)
         if self._room != room_id:
@@ -192,12 +195,12 @@ class SwitchAgent:
             time.sleep(1)
 
 
-_CMD = re.compile(r"(?:@orchestrator\b|^\s*deflate\b)[\s:,]*(\w+)\s*(.*)", re.S | re.I)
+_CMD = re.compile(r"(?:@orchestrator\b|^\s*deflate\b)(?:[\s:,]*(?:@orchestrator|deflate)\b)*[\s:,]*(\w+)\s*(.*)", re.S | re.I)
 # the verifier posts `verified <hid> round <n>: ...` as a plain room message (agents/verifier.md)
-_VERIFIED = re.compile(rf"^\s*(?:(?:@orchestrator|deflate)\b[\s:,]*)?verified\s+({HID})\s+round\s+(\d+)\b\s*:?\s*(.*)",
+_VERIFIED = re.compile(rf"^\s*(?:(?:@orchestrator|deflate)\b[\s:,]*)*verified\s+({HID})\s+round\s+(\d+)\b\s*:?\s*(.*)",
                        re.S | re.I)
 # the judge replies `@orchestrator <hid> round <n>: {"prefer": "A"|"B", "reason": ...}` (agents/judge.md)
-_JUDGED = re.compile(rf"(?:@orchestrator\b|^\s*deflate\b)[\s:,]*({HID})\s+round\s+(\d+)\s*:\s*(\{{.*\}})\s*$", re.S | re.I)
+_JUDGED = re.compile(rf"(?:@orchestrator\b|^\s*deflate\b)(?:[\s:,]*(?:@orchestrator|deflate)\b)*[\s:,]*({HID})\s+round\s+(\d+)\s*:\s*(\{{.*\}})\s*$", re.S | re.I)
 
 
 def parse_command(text: str) -> dict | None:

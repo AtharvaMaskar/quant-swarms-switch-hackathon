@@ -131,11 +131,12 @@ class Orchestrator:
     def replay(self, room_id: str, limit: int = 30) -> None:
         """Handle commands already posted in `room_id` (e.g. while we were down), oldest first."""
         ctx = self.agent.op("read_context", limit=limit, room_id=room_id)
-        roots = [t["root"] for t in ctx.get("threads", []) if t.get("root")]
+        roots = [m for t in ctx.get("threads", []) for m in [t.get("root"), *(t.get("replies") or [])] if m]
         for m in sorted(roots, key=lambda m: m.get("ts") or m.get("created_at") or ""):
             env = {"type": "message", "room_id": room_id,
                    "payload": {"sender": m.get("sender"), "sender_name": m.get("sender_name"),
-                               "body": m.get("body", ""), "message_id": m.get("id")}}
+                               "body": m.get("body", ""), "message_id": m.get("id"),
+                               "thread_id": m.get("thread_id")}}
             try:
                 self.handle(env)
             except Exception:
