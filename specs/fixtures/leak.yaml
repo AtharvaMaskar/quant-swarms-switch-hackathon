@@ -1,0 +1,15 @@
+# Planted-leak fixture: `tc` is today's close, visible from the first bar.
+# `_today_close` is registered only by the tests. lookahead_probe must return False.
+id: hleak
+card: {contribution: fixture, mechanism: "look-ahead (planted)", kill: ["probe"]}
+instrument: {segment: futures, underlying: NIFTY}
+session: {start: "09:20", end: "15:15"}
+features:
+  tc: {fn: _today_close}
+  px: {fn: sma, field: close, n: 1}
+entry:
+  long: "tc > px * (1 + p.k)"
+  short: "tc < px * (1 - p.k)"
+exit: {stop_atr: 0.5, take_atr: 1.0, atr_days: 5, time: "15:15"}
+sizing: {risk_per_trade: 0.01, capital_inr: 14040000, max_lots: 10}
+params: {k: 0.001}

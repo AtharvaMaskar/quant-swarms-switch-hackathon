@@ -1,0 +1,22 @@
+id: h1.2
+card:
+  slug: gap-and-go
+  contribution: replication
+  problem: "Do large NIFTY opening gaps continue in their direction during the session?"
+  motivation: "Trial h1.1 (gap fade) lost with SR -1.27 and gross -10.7L before costs, i.e. gaps continued. This fork is the mirror bet, chosen AFTER seeing h1.1, so it is counted in the same family and the DSR deflation must absorb the flip."
+  approach: "At 09:20, trade in the direction of an opening gap larger than g (buy gap-ups, short gap-downs), 1 ATR stop, flat at 15:15, one trade a day. Exits unchanged from h1.1."
+  plan: "Fork of h1 (mirror of h1.1). Research-window CPCV over g; demo gate."
+  mechanism: "A large gap prices overnight global information only partly: domestic institutions and FII cash flows execute during the Indian session in the direction of the overnight news, so the open-to-close move extends the gap."
+  kill: ["CPCV median path SR <= 0", "exposure-null percentile < 0.5", "gross/costs < 3", "best 5 days carry >= 50% of net"]
+instrument: {segment: futures, underlying: NIFTY}
+session: {start: "09:20", end: "15:15"}
+features:
+  gap: {fn: gap_pct}
+entry:
+  long: "gap > p.g"
+  short: "gap < -p.g"
+  max_per_day: 1
+exit: {stop_atr: 1.0, atr_days: 14, time: "15:15"}
+sizing: {risk_per_trade: 0.01, capital_inr: 14040000, max_lots: 10}
+params: {g: 0.005}
+grid: {g: [0.003, 0.005, 0.007]}

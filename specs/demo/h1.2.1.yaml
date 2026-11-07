@@ -1,0 +1,23 @@
+id: h1.2.1
+card:
+  slug: gap-and-go-confirmed
+  contribution: filter
+  problem: "Does gap continuation get stronger when the first half hour confirms the gap instead of filling it?"
+  motivation: "h1.2 (gap-and-go) had SR 0.56, too weak, and small gaps (g=0.003) lost. Classic gap-and-go trading enters only once the open holds; gaps that start filling are noise gaps that locals fade (the h1.1 mechanism)."
+  approach: "At 09:45, if the open gapped by more than g and price is still beyond the session open in the gap direction, trade with the gap; 1 ATR stop, flat at 15:15, one trade a day."
+  plan: "Fork of h1.2 adding a timing + confirmation filter. Research-window CPCV over g; demo gate."
+  mechanism: "Information gaps (global news) keep attracting same-direction institutional flow during the session; noise gaps get faded in the first 30 minutes. Requiring the open to hold separates the two."
+  kill: ["CPCV median path SR <= 0", "dropping the confirmation clause does not hurt (ablation)", "gross/costs < 3", "best 5 days carry >= 50% of net"]
+instrument: {segment: futures, underlying: NIFTY}
+session: {start: "09:20", end: "15:15"}
+features:
+  gap: {fn: gap_pct}
+  ret_open: {fn: ret_since, anchor: session_open}
+entry:
+  long: "minute_of_day == p.t and gap > p.g and ret_open > 0"
+  short: "minute_of_day == p.t and gap < -p.g and ret_open < 0"
+  max_per_day: 1
+exit: {stop_atr: 1.0, atr_days: 14, time: "15:15"}
+sizing: {risk_per_trade: 0.01, capital_inr: 14040000, max_lots: 10}
+params: {g: 0.005, t: 30}
+grid: {g: [0.003, 0.005, 0.007]}

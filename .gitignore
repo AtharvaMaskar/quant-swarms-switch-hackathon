@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+data/
+runs/
+research.db*
+.env
+landing/node_modules/
+landing/dist/
+landing/.taste-skill/
+research*.db*

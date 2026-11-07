@@ -1,0 +1,38 @@
+# DEMO gate: same keys as gate.yaml, looser thresholds; every output is stamped. Hashed (sha256 of this file's bytes); every verdict carries gate_sha.
+# Thresholds: docs/superpowers/specs/2026-11-07-quant-swarm-design.md §7.
+demo: true                # DEMO GATE (looser thresholds)
+
+# procedure
+probe_cuts: 10            # look-ahead probe perturbation cuts
+cpcv_n: [8, 10, 12]       # N = cpcv_n[seed % 3]; the seed is never shown to agents
+cpcv_k: 2
+embargo_frac: 0.01        # embargo h = 0.01 * T days
+pbo_S: 16
+exposure_null_n: 1000
+p_failure_target_sr: 1.0  # annualised
+p_failure_eval_years: 2.0
+vol_target: 0.15          # drawdown checks rescale to this annualised vol
+robust_frac: 0.10         # non-grid params perturbed by +-10% (ints by +-1)
+synthetic_paths: 10000
+synthetic_mesh: 20
+
+thresholds:
+  min_bets: 20
+  cpcv_pos: 0.50          # share of CPCV paths with net P&L > 0
+  cpcv_median_sr: 0.0     # median path Sharpe (annualised) must exceed this
+  psr: 0.50               # PSR(0)
+  dsr: 0.50
+  pbo: 0.50
+  exposure_null: 0.50     # percentile vs circularly shifted exposure
+  cost_ratio: 3.0         # gross P&L / execution costs
+  p_failure: 0.50
+  hhi: 0.30               # HHI of positive and of negative bet returns, each
+  top5_share: 0.50        # best 5 days' share of net P&L
+  max_dd: 0.20            # at vol_target
+  tuw: 0.30               # longest time under water / days, at vol_target
+  patch_nontarget: 0.70   # share of untargeted CPCV groups held or improved
+  # read by the runner (qs/runner.py), not by run_gate
+  patch_budget: 4
+  fork_depth: 3
+  max_sr_annual: 3.0      # best achievable annualised SR assumed by the dsr_unreachable hard stop
+  holdout_psr: 0.5

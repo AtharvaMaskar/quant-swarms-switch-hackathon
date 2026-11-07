@@ -1,0 +1,36 @@
+symbol,field,effective_from,value,source
+NIFTY,weekly_expiry_weekday,2022-01-06,Thursday,in force at window start; bhavcopy
+NIFTY,monthly_expiry_weekday,2022-01-27,last Thursday,in force at window start; bhavcopy
+ALL_NSE_FO,expiry_weekday_change_announced,2025-04-04,"Monday (ANNOUNCED, NOT IMPLEMENTED: bhavcopy shows Thu expiries through 2025-08-28)",NSE/FAOP/66938 https://nsearchives.nseindia.com/content/circulars/FAOP66938.pdf
+NIFTY,weekly_expiry_weekday,2025-09-02,Tuesday (last Thursday weekly 2025-08-21; monthly 2025-08-28),NSE/FAOP/68747 https://nsearchives.nseindia.com/content/circulars/FAOP68747.pdf; NSE/FAOP/68589 https://nsearchives.nseindia.com/content/circulars/FAOP68589.pdf; bhavcopy
+NIFTY,monthly_expiry_weekday,2025-09-30,last Tuesday (long-dated realigned 2025-07-31 EOD),NSE/FAOP/68747 https://nsearchives.nseindia.com/content/circulars/FAOP68747.pdf; bhavcopy
+BANKNIFTY,weekly_expiry_weekday,2022-01-06,Thursday,in force at window start; bhavcopy
+BANKNIFTY,weekly_expiry_weekday,2023-09-06,Wednesday,bhavcopy (NSE circular not retrieved)
+BANKNIFTY,monthly_expiry_weekday,2022-01-27,last Thursday,bhavcopy
+BANKNIFTY,monthly_expiry_weekday,2024-03-27,last Wednesday,bhavcopy (NSE circular not retrieved)
+BANKNIFTY,weekly_available,2024-11-20,discontinued; last weekly 2024-11-13,NSE Oct-10-2024 circular (number not retrieved); last weekly per bhavcopy
+BANKNIFTY,monthly_expiry_weekday,2025-01-30,last Thursday (existing contracts redated 2025-01-01 EOD),NSE/FAOP/65336 https://nsearchives.nseindia.com/content/circulars/FAOP65336.pdf; bhavcopy
+BANKNIFTY,monthly_expiry_weekday,2025-09-30,last Tuesday,NSE/FAOP/68747 https://nsearchives.nseindia.com/content/circulars/FAOP68747.pdf; bhavcopy
+FINNIFTY,weekly_expiry_weekday,2022-01-04,Tuesday,in force at window start; bhavcopy
+FINNIFTY,monthly_expiry_weekday,2022-01-25,last Tuesday,bhavcopy
+FINNIFTY,weekly_available,2024-11-20,discontinued; last weekly 2024-11-19,NSE Oct-10-2024 circular (number not retrieved); last weekly per bhavcopy
+FINNIFTY,monthly_expiry_weekday,2025-01-30,last Thursday,NSE/FAOP/65336 https://nsearchives.nseindia.com/content/circulars/FAOP65336.pdf; bhavcopy
+FINNIFTY,monthly_expiry_weekday,2025-09-30,last Tuesday,NSE/FAOP/68747 https://nsearchives.nseindia.com/content/circulars/FAOP68747.pdf; bhavcopy
+MIDCPNIFTY,weekly_expiry_weekday,2022-02-01,"Tuesday (launched 2022-01-24, monthly last Tuesday)",bhavcopy
+MIDCPNIFTY,weekly_expiry_weekday,2023-05-03,Wednesday (monthly also Wed),bhavcopy only; circular not retrieved
+MIDCPNIFTY,weekly_expiry_weekday,2023-08-21,Monday (monthly last Monday),bhavcopy only; circular not retrieved
+MIDCPNIFTY,weekly_available,2024-11-20,discontinued; last weekly 2024-11-18,NSE Oct-10-2024 circular (number not retrieved); last weekly per bhavcopy
+MIDCPNIFTY,monthly_expiry_weekday,2025-01-30,last Thursday,NSE/FAOP/65336 https://nsearchives.nseindia.com/content/circulars/FAOP65336.pdf; bhavcopy
+MIDCPNIFTY,monthly_expiry_weekday,2025-09-30,last Tuesday,NSE/FAOP/68747 https://nsearchives.nseindia.com/content/circulars/FAOP68747.pdf; bhavcopy
+NIFTYNXT50,monthly_expiry_weekday,2024-05-31,"last Friday (derivatives launched 2024-04-24, monthly only)",bhavcopy
+NIFTYNXT50,monthly_expiry_weekday,2025-01-30,last Thursday,NSE/FAOP/65336 https://nsearchives.nseindia.com/content/circulars/FAOP65336.pdf; bhavcopy
+NIFTYNXT50,monthly_expiry_weekday,2025-09-30,last Tuesday,NSE/FAOP/68747 https://nsearchives.nseindia.com/content/circulars/FAOP68747.pdf; bhavcopy
+STOCKS,monthly_expiry_weekday,2022-01-27,last Thursday,in force at window start
+STOCKS,monthly_expiry_weekday,2025-09-30,last Tuesday,NSE/FAOP/68747 https://nsearchives.nseindia.com/content/circulars/FAOP68747.pdf
+INDEX_FUTURES,tick_size,2025-04-15,0.05 if index<=15000; 0.10 if 15000-30000; 0.20 if >30000; re-set monthly from last-trading-day close (prior: 0.05 flat). Index options stay 0.05,NSE/FAOP/67135 https://nsearchives.nseindia.com/content/circulars/FAOP67135.pdf
+NIFTY,freeze_qty,2026-10-05,3510 (fixed; methodology of NSE/FAOP/73928 suspended for indices),NSE/FAOP/76693 https://nsearchives.nseindia.com/content/circulars/FAOP76693.pdf
+BANKNIFTY,freeze_qty,2026-10-05,1440,NSE/FAOP/76693 https://nsearchives.nseindia.com/content/circulars/FAOP76693.pdf
+NIFTY,freeze_qty,2026-11-02,1800 (back to NSE/FAOP/73928 methodology),NSE/FAOP/77189 https://nsearchives.nseindia.com/content/circulars/FAOP77189.pdf
+BANKNIFTY,freeze_qty,2026-11-02,900,NSE/FAOP/77189 https://nsearchives.nseindia.com/content/circulars/FAOP77189.pdf
+NIFTY,freeze_qty,2023-04-03,"1800 (as of; also reported Aug-2024, Feb-2025)",broker mirror (Angel One monthly freeze notices) - unverified vs NSE
+BANKNIFTY,freeze_qty,2023-04-03,"900 (as of; also reported Aug-2024, Feb-2025)",broker mirror (Angel One) - unverified vs NSE

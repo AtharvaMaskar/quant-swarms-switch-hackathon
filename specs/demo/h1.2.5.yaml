@@ -1,0 +1,23 @@
+id: h1.2.5
+card:
+  slug: vol-scaled-gap-and-go
+  contribution: method
+  problem: "Is gap continuation better captured by gap size in units of the regime's daily vol than by a fixed % gap plus a vol cap?"
+  motivation: "h1.2 (fixed 0.5% gap) SR 0.56; h1.2.3 (gap plus rv cap) SR 0.84 but the cap clause failed ablation under CPCV and the gate flagged concentration. Both say a gap matters relative to the regime: 0.5% is an event in a calm month and noise in a turbulent one. One clause expresses that directly."
+  approach: "At 09:20, trade in the direction of the opening gap when |gap| exceeds k daily sigmas, with daily sigma = 20-day realised vol / sqrt(252); 1 ATR stop, flat at 15:15, one trade a day."
+  plan: "Fork of h1.2 (re-expresses h1.2.3's two clauses as one vol-scaled clause). Research-window CPCV over k; demo gate."
+  mechanism: "An overnight gap that is large relative to recent realised volatility is an information shock that local participants under-react to at the open; institutional flow keeps executing in the gap direction through the session."
+  kill: ["CPCV median path SR <= 0", "exposure-null percentile < 0.5", "gross/costs < 3", "best 5 days carry >= 50% of net"]
+instrument: {segment: futures, underlying: NIFTY}
+session: {start: "09:20", end: "15:15"}
+features:
+  gap: {fn: gap_pct}
+  rv: {fn: realized_vol, days: 20}
+entry:
+  long: "gap > p.k * rv / 15.87"
+  short: "gap < -p.k * rv / 15.87"
+  max_per_day: 1
+exit: {stop_atr: 1.0, atr_days: 14, time: "15:15"}
+sizing: {risk_per_trade: 0.01, capital_inr: 14040000, max_lots: 10}
+params: {k: 0.8}
+grid: {k: [0.6, 0.8, 1.0]}

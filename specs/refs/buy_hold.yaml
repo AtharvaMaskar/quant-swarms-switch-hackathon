@@ -1,0 +1,16 @@
+# Reference row: long NIFTY front future every session, enter 09:20 (fill 09:21 open), flat 15:15.
+# Intraday by construction (the engine holds nothing overnight), same fills and dated costs as any spec.
+# Wide stop so it almost never triggers; max_lots binds (~1x notional on 14.04 Cr).
+id: ref_buy_hold
+card:
+  problem: "Reference: is the strategy better than just being long during the session?"
+  mechanism: "None. A null for drift."
+instrument: {segment: futures, underlying: NIFTY}
+session: {start: "09:20", end: "15:15"}
+features:
+  m: {fn: minute_of_day}
+entry:
+  long: "m == 5"
+  max_per_day: 1
+exit: {stop_atr: 50, atr_days: 14, time: "15:15"}
+sizing: {risk_per_trade: 1.0, capital_inr: 14040000, max_lots: 8}

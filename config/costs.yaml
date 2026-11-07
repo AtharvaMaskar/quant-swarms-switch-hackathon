@@ -1,0 +1,76 @@
+# Dated charge sets. A trade uses the latest set with effective_from <= trade date.
+# A set with `inherits: <effective_from>` restates only what changed (deep merge).
+# Rates are fractions (0.0001 = 0.01%). *_per_cr are rupees per crore of turnover.
+# STT side: sell | buy | both. STT base for options = premium turnover.
+# verify: true marks values not yet confirmed against a primary source.
+charge_sets:
+  - effective_from: 2022-01-01
+    gst: 0.18                      # on brokerage + exchange + SEBI + IPFT
+    sebi_per_cr: 10
+    rounding: {stt: rupee, stamp: rupee}
+    futures:
+      brokerage: {flat: 20, verify: true}   # Groww F&O; one snippet shows 50
+      stt: {rate: 0.0001, side: sell}
+      exchange: {NSE: 0.00002, verify: true}
+      ipft_per_cr: 10
+      stamp: 0.00002
+    options:
+      brokerage: {flat: 20, verify: true}
+      stt: {rate: 0.0005, side: sell}       # on premium
+      stt_exercise: 0.00125                  # on intrinsic, at exercise
+      exchange: {NSE: 0.00053, verify: true}
+      ipft_per_cr: 50
+      stamp: 0.00003
+    equity_intraday:
+      brokerage: {flat: 20, pct: 0.001, verify: true}   # min(flat, pct * turnover)
+      stt: {rate: 0.00025, side: sell}
+      exchange: {NSE: 0.0000345, verify: true}
+      ipft_per_cr: 10
+      stamp: 0.00003
+    equity_delivery:
+      brokerage: {flat: 20, pct: 0.001, verify: true}
+      stt: {rate: 0.001, side: both}
+      exchange: {NSE: 0.0000345, verify: true}
+      ipft_per_cr: 10
+      stamp: 0.00015
+
+  - effective_from: 2023-04-01
+    inherits: 2022-01-01
+    futures: {stt: {rate: 0.000125}}
+    options: {stt: {rate: 0.000625}}
+
+  - effective_from: 2024-10-01
+    inherits: 2023-04-01
+    futures: {stt: {rate: 0.0002}, exchange: {NSE: 0.0000173, verify: false}}
+    options: {stt: {rate: 0.001}, exchange: {NSE: 0.0003503, verify: false}}
+    equity_intraday: {exchange: {NSE: 0.0000297, verify: false}}
+    equity_delivery: {exchange: {NSE: 0.0000297, verify: false}}
+
+  - effective_from: 2026-04-01
+    inherits: 2024-10-01
+    verify: true                   # 2026 STT rates seen in news/law-firm sources only
+    futures: {stt: {rate: 0.0005}}
+    options: {stt: {rate: 0.0015}, stt_exercise: 0.0015}
+
+# Slippage in price points per fill. combine: max | sum over the listed components:
+#   ticks (n * tick), pct (of price), pct_premium (of option premium; same as pct on premium).
+# half_spread, when the caller passes one (live quotes), replaces the model.
+slippage:
+  session_open: "09:15"
+  multipliers:
+    expiry_day: 2.0
+    open_5min: {value: 1.5, verify: true}  # first 5 minutes after session_open
+  segments:
+    futures: {combine: max, ticks: 2, pct: 0.00003}
+    options: {combine: sum, ticks: 1, pct_premium: 0.0025}      # ATM
+    options_otm: {combine: max, ticks: 1, pct_premium: 0.015}
+    equity_intraday: {combine: max, ticks: 1, pct: 0.0002, verify: true}
+    equity_delivery: {combine: max, ticks: 1, pct: 0.0002, verify: true}
+
+# Tick sizes. Index futures banded from 2025-04-15 (NSE/FAOP/67135); index options stay at default.
+tick_size:
+  default: 0.05
+  index_symbols: [NIFTY, BANKNIFTY, FINNIFTY, MIDCPNIFTY, NIFTYNXT50]
+  index_futures_bands:
+    - effective_from: 2025-04-15
+      bands: [[15000, 0.05], [30000, 0.10], [null, 0.20]]   # [upper price bound inclusive, tick]

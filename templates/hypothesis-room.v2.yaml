@@ -1,0 +1,54 @@
+# One room per hypothesis (root or fork). Created by the orchestrator with
+# create_room_from_yaml(yaml, inputs). Patches (h12v2...) stay in the same room.
+# Agents are the long-lived ones that already exist; they are named, not created.
+version: 2
+params:
+  hid:
+    type: string
+    description: Hypothesis id (h12, h12.1)
+    pattern: "h[0-9]+(\\.[0-9]+){0,3}"
+  room:
+    type: string
+    description: Room name, id with . -> - plus a slug of at most 3 words (h12-1-expiry-mom-volgate)
+    pattern: "[a-z0-9]+(-[a-z0-9]+)*"
+  slug: {type: string, description: Slug of at most 3 words}
+  round: {type: number, description: Loop round}
+  spec_doc: {type: string, multiline: true, description: The card and frozen-spec text}
+  repo_url: {type: string, default: "https://github.com/AtharvaMaskar/quant-swarms-switch-hackathon"}
+  coder: {type: agent, default: coder}
+  verifier: {type: agent, default: verifier}
+  validator: {type: agent, default: validator}
+  orchestrator: {type: agent, default: orchestrator}
+resources:
+  hyp:
+    type: room
+    name: "{room}"
+    description: "Hypothesis {hid} ({slug}): build, verify, gate."
+    agents: ["{coder}", "{verifier}", "{validator}", "{orchestrator}"]
+    users: ["{$creator}"]
+    instructions: |
+      Hypothesis {hid}. The card is in the spec-{hid} doc. Our code decides; agents only
+      write specs/{hid}.yaml and messages. Never edit qs/, config/ or ref/.
+      Commands to the orchestrator are in each agent's brief (agents/*.md).
+    roles:
+      - name: coder
+        exclusive: true
+        instructions: Write specs/{hid}.yaml on branch hyp/{hid}, then freeze it. One-rule patches only.
+      - name: verifier
+        exclusive: true
+        instructions: Check the frozen spec matches the card. Never edit the spec.
+      - name: validator
+        exclusive: true
+        instructions: Explain the gate report in plain language. Never compute or change a verdict.
+    docs:
+      - name: "spec-{hid}"
+        description: "The proposer card for {hid} and, once frozen, its spec"
+        instructions: Read before writing or checking the spec.
+        content: "{spec_doc}"
+    references:
+      - type: github
+        name: "Deflate repo ({hid})"
+        description: The research repo (engine, gate, specs)
+        instructions: Read it. Write only specs/{hid}.yaml on branch hyp/{hid}.
+        value: {urls: ["{repo_url}"]}
+    kickoff: "@{coder} {hid} round {round}: write specs/{hid}.yaml from the card on branch hyp/{hid}, then send the orchestrator: freeze {hid} specs/{hid}.yaml"

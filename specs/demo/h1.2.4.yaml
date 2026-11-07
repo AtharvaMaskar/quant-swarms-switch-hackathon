@@ -1,0 +1,25 @@
+id: h1.2.4
+card:
+  slug: gap-after-narrow-range
+  contribution: filter
+  problem: "Do opening gaps that break a compressed (narrow-range) prior day continue more than other gaps?"
+  motivation: "Crabel's narrow-range work: a gap out of a compressed day often starts a trend day. h1 found the narrow-range clause earned its keep (ablation) for first-hour momentum, and h1.2.3 found gap continuation is stronger in calm regimes. This uses the day-level compression measure instead of 20-day vol; nr grid copied from h1, not re-tuned."
+  approach: "At 09:20, trade in the direction of an opening gap larger than g when yesterday's high-low range was below nr x ATR(14); 1 ATR stop, flat at 15:15, one trade a day."
+  plan: "Fork of h1.2 adding a narrow-range clause. Research-window CPCV over nr (h1's grid); demo gate."
+  mechanism: "A narrow day leaves stops clustered just beyond its high/low and option sellers short tight strikes; a gap through that range triggers stops and short-gamma hedging in the gap direction, so the session extends the gap."
+  kill: ["CPCV median path SR <= 0", "dropping the narrow-range clause does not hurt (ablation)", "gross/costs < 3", "best 5 days carry >= 50% of net"]
+instrument: {segment: futures, underlying: NIFTY}
+session: {start: "09:20", end: "15:15"}
+features:
+  gap: {fn: gap_pct}
+  ph: {fn: prev_day, field: high}
+  pl: {fn: prev_day, field: low}
+  a: {fn: atr, days: 14}
+entry:
+  long: "gap > p.g and ph - pl < p.nr * a"
+  short: "gap < -p.g and ph - pl < p.nr * a"
+  max_per_day: 1
+exit: {stop_atr: 1.0, atr_days: 14, time: "15:15"}
+sizing: {risk_per_trade: 0.01, capital_inr: 14040000, max_lots: 10}
+params: {g: 0.005, nr: 0.8}
+grid: {nr: [0.6, 0.8, 1.0]}

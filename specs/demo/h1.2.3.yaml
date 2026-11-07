@@ -1,0 +1,23 @@
+id: h1.2.3
+card:
+  slug: gap-and-go-calm
+  contribution: filter
+  problem: "Is gap continuation concentrated in calm (low realised vol) regimes?"
+  motivation: "The repo's reference card (orb_vol) states the prior that low-vol days trend after an early imbalance while high-vol days mean-revert. h1.2.2 (high-VIX filter) lost, which is consistent with that prior; this fork tests the calm-regime side with a different vol measure (20-day realised vol, not VIX). Chosen after seeing h1.2.2, so counted in the family."
+  approach: "At 09:20, trade in the direction of an opening gap larger than g only when 20-day realised vol (to yesterday) is below rvcap; 1 ATR stop, flat at 15:15, one trade a day."
+  plan: "Fork of h1.2 adding a realised-vol cap. Research-window CPCV over rvcap; demo gate."
+  mechanism: "In calm regimes a large gap is a rare, genuine information shock against light positioning; dealers are long gamma less often and trend-followers re-lever into it, so it extends. In turbulent regimes gaps are routine noise and revert."
+  kill: ["CPCV median path SR <= 0", "dropping the vol clause does not hurt (ablation)", "gross/costs < 3", "best 5 days carry >= 50% of net"]
+instrument: {segment: futures, underlying: NIFTY}
+session: {start: "09:20", end: "15:15"}
+features:
+  gap: {fn: gap_pct}
+  rv: {fn: realized_vol, days: 20}
+entry:
+  long: "gap > p.g and rv < p.rvcap"
+  short: "gap < -p.g and rv < p.rvcap"
+  max_per_day: 1
+exit: {stop_atr: 1.0, atr_days: 14, time: "15:15"}
+sizing: {risk_per_trade: 0.01, capital_inr: 14040000, max_lots: 10}
+params: {g: 0.005, rvcap: 0.13}
+grid: {rvcap: [0.11, 0.13, 0.15]}

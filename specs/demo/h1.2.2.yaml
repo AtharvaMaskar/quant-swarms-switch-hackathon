@@ -1,0 +1,22 @@
+id: h1.2.2
+card:
+  slug: gap-and-go-high-vix
+  contribution: filter
+  problem: "Is gap continuation concentrated in high-implied-vol regimes?"
+  motivation: "h1.2 (gap-and-go, SR 0.56) works on large gaps only (g=0.003 lost); h1.2.1 showed an opening-range confirmation is storytelling. Gao, Han, Li and Zhou (2018) find intraday momentum is strongest on high-volatility days."
+  approach: "At 09:20, trade in the direction of an opening gap larger than g only when yesterday's India VIX close is above v; 1 ATR stop, flat at 15:15, one trade a day."
+  plan: "Fork of h1.2 adding a VIX regime clause and moving the gap grid off the losing 0.003 value. Research-window CPCV over g and v (3x3); demo gate."
+  mechanism: "When implied vol is high, overnight gaps carry real risk news (global risk-off/on) and option dealers are short gamma, so hedging flow in the session chases the gap; in calm regimes gaps are noise that locals fade."
+  kill: ["CPCV median path SR <= 0", "dropping the VIX clause does not hurt (ablation)", "gross/costs < 3", "best 5 days carry >= 50% of net"]
+instrument: {segment: futures, underlying: NIFTY}
+session: {start: "09:20", end: "15:15"}
+features:
+  gap: {fn: gap_pct}
+entry:
+  long: "gap > p.g and vix > p.v"
+  short: "gap < -p.g and vix > p.v"
+  max_per_day: 1
+exit: {stop_atr: 1.0, atr_days: 14, time: "15:15"}
+sizing: {risk_per_trade: 0.01, capital_inr: 14040000, max_lots: 10}
+params: {g: 0.006, v: 14}
+grid: {g: [0.004, 0.006, 0.008], v: [12, 14, 16]}

@@ -1,0 +1,25 @@
+id: h1
+card:
+  slug: nr-first-hour-trend
+  contribution: filter
+  problem: "Does a strong first-hour move continue to the close after a compressed (narrow-range) prior day?"
+  motivation: "Volatility clusters and compresses then expands (Crabel's NR days); intraday momentum literature (Gao et al. 2018) finds the early-session move predicts the rest of the day."
+  approach: "At 10:15, if the futures are more than thr from the open and yesterday's range was below nr x ATR(14), trade in the direction of the move, hold to 15:15 with a 1 ATR stop, one trade a day."
+  plan: "Research window CPCV over thr and nr (3x3 grid); demo gate."
+  mechanism: "After a compressed day, positioning is light and option sellers are short gamma at tight strikes; an early break forces hedgers and stopped-out range traders to chase, so the move extends through the session instead of mean-reverting."
+  kill: ["CPCV median path SR <= 0", "dropping the narrow-range clause does not hurt (ablation)", "gross/costs < 3", "exposure-null percentile < 0.5"]
+instrument: {segment: futures, underlying: NIFTY}
+session: {start: "09:20", end: "15:15"}
+features:
+  ret_open: {fn: ret_since, anchor: session_open}
+  ph: {fn: prev_day, field: high}
+  pl: {fn: prev_day, field: low}
+  a: {fn: atr, days: 14}
+entry:
+  long: "minute_of_day == 60 and ret_open > p.thr and ph - pl < p.nr * a"
+  short: "minute_of_day == 60 and ret_open < -p.thr and ph - pl < p.nr * a"
+  max_per_day: 1
+exit: {stop_atr: 1.0, atr_days: 14, time: "15:15"}
+sizing: {risk_per_trade: 0.01, capital_inr: 14040000, max_lots: 10}
+params: {thr: 0.003, nr: 0.8}
+grid: {thr: [0.002, 0.003, 0.004], nr: [0.6, 0.8, 1.0]}

@@ -1,0 +1,38 @@
+# The control room: proposers, judge, orchestrator and the human risk owner.
+# Created once per run. {hid} is the next free hypothesis id, so the kickoff is unique per run.
+version: 2
+params:
+  hid: {type: string, description: Next free hypothesis id (h13)}
+  round: {type: number, default: 1, description: Loop round}
+  room: {type: string, default: deflate-control, description: Room name}
+  repo_url: {type: string, default: "https://github.com/AtharvaMaskar/quant-swarms-switch-hackathon"}
+  proposer_card: {type: agent, default: proposer-card}
+  proposer_lead: {type: agent, default: proposer-lead}
+  proposer_contrarian: {type: agent, default: proposer-contrarian}
+  judge: {type: agent, default: judge}
+  orchestrator: {type: agent, default: orchestrator}
+resources:
+  control:
+    type: room
+    name: "{room}"
+    description: "Deflate control: propose, judge, sign off. Leaderboard and round summaries land here."
+    agents: ["{proposer_card}", "{proposer_lead}", "{proposer_contrarian}", "{judge}", "{orchestrator}"]
+    users: ["{$creator}"]
+    instructions: |
+      Proposers post cards with the propose command; the judge compares cards; the human
+      approves or rejects. Our code decides everything else. Never edit qs/, config/ or ref/.
+      Commands to the orchestrator are in each agent's brief (agents/*.md).
+    roles:
+      - name: proposer
+        exclusive: false
+        instructions: Propose five-slot cards through your lens. Features from the whitelist only.
+      - name: judge
+        exclusive: true
+        instructions: Compare two cards on the criteria in your brief; reply with the JSON verdict. Never judge truth.
+    references:
+      - type: github
+        name: "Deflate repo (control {hid})"
+        description: The research repo (engine, gate, specs, briefs)
+        instructions: Read it. Do not push.
+        value: {urls: ["{repo_url}"]}
+    kickoff: "@{proposer_card} @{proposer_lead} @{proposer_contrarian} {hid} round {round}: propose cards (next id {hid}), one propose command each, then @{judge} compares."

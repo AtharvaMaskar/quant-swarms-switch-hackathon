@@ -1,0 +1,22 @@
+id: h0
+card:
+  contribution: method
+  problem: "Does an opening-range move continue when realised vol is low?"
+  motivation: "Reference example for the spec language."
+  approach: "Trade in the direction of the move since the open, only in calm regimes."
+  plan: "Research window CPCV over thr."
+  mechanism: "Low-vol days trend after an early imbalance; high-vol days mean-revert."
+  kill: ["CPCV median path SR <= 0", "fails cost ratio"]
+instrument: {segment: futures, underlying: NIFTY}
+session: {start: "09:20", end: "15:15"}
+features:
+  ret_open: {fn: ret_since, anchor: session_open}
+  rv: {fn: realized_vol, days: 20}
+entry:
+  long: "ret_open > p.thr and rv < p.rvcap"
+  short: "ret_open < -p.thr and rv < p.rvcap"
+  max_per_day: 1
+exit: {stop_atr: 1.5, take_atr: 3.0, atr_days: 14, time: "15:15"}
+sizing: {risk_per_trade: 0.01, capital_inr: 14040000, max_lots: 10}
+params: {thr: 0.003, rvcap: 0.18}
+grid: {thr: [0.002, 0.003, 0.004]}

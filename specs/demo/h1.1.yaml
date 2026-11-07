@@ -1,0 +1,22 @@
+id: h1.1
+card:
+  slug: gap-fade
+  contribution: replication
+  problem: "Do large NIFTY opening gaps partly revert during the session?"
+  motivation: "Trial h1 showed intraday buy-and-hold has negative Sharpe on the research window while index returns accrue overnight; the overnight/intraday reversal literature (Lou, Polk, Skouras 2019) finds intraday moves offset overnight ones."
+  approach: "At 09:20, fade an opening gap larger than g (short gap-ups, buy gap-downs), 1 ATR stop, flat at 15:15, one trade a day."
+  plan: "Fork of h1 (new mechanism, same family). Research-window CPCV over g; demo gate."
+  mechanism: "Overnight gaps are priced off global cues and GIFT Nifty by a thin set of traders; at the open, domestic retail and option-delta flows overshoot, then local institutions provide liquidity against the gap through the day."
+  kill: ["CPCV median path SR <= 0", "exposure-null percentile < 0.5 (just short the negative intraday drift)", "gross/costs < 3"]
+instrument: {segment: futures, underlying: NIFTY}
+session: {start: "09:20", end: "15:15"}
+features:
+  gap: {fn: gap_pct}
+entry:
+  long: "gap < -p.g"
+  short: "gap > p.g"
+  max_per_day: 1
+exit: {stop_atr: 1.0, atr_days: 14, time: "15:15"}
+sizing: {risk_per_trade: 0.01, capital_inr: 14040000, max_lots: 10}
+params: {g: 0.005}
+grid: {g: [0.003, 0.005, 0.007]}

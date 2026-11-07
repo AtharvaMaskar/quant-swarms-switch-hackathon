@@ -1,0 +1,45 @@
+# One room per paper (design §5a). Created by the orchestrator on `@orchestrator implement <url|id>`
+# and linked to control. The reader and the human brainstorm here with memory; cards proposed
+# from this room carry `source`, and their hypothesis rooms link back with "from paper".
+version: 2
+params:
+  lit_id:
+    type: string
+    description: Paper id (arxiv-2611-03424, ssrn-4567890)
+    pattern: "(arxiv-[0-9]{4}-[0-9]{4,5}|ssrn-[0-9]+)"
+  room:
+    type: string
+    description: Room name, lit- plus the paper id
+    pattern: "lit-[a-z0-9]+(-[a-z0-9]+)*"
+  round: {type: number, description: Loop round}
+  url: {type: string, description: Canonical paper URL (arXiv abs page or SSRN abstract page)}
+  repo_url: {type: string, default: "https://github.com/AtharvaMaskar/quant-swarms-switch-hackathon"}
+  reader: {type: agent, default: reader}
+  orchestrator: {type: agent, default: orchestrator}
+resources:
+  lit:
+    type: room
+    name: "{room}"
+    description: "Paper {lit_id}: read, brainstorm with memory, propose cards."
+    agents: ["{reader}", "{orchestrator}"]
+    users: ["{$creator}"]
+    instructions: |
+      Paper {lit_id} ({url}). The reader writes the paper card, runs the memory queries, and
+      brainstorms with the human in short turns. Cards are proposed only when the human says
+      `@reader propose`. Nobody claims results here: the gate decides. Never edit qs/, config/ or ref/.
+    roles:
+      - name: reader
+        exclusive: true
+        instructions: Read the paper, write the paper card, check memory first, brainstorm, propose only on request.
+    docs:
+      - name: "paper-{lit_id}"
+        description: "The paper reference and, once read, the paper card for {lit_id}"
+        instructions: The reader fills the paper card here. Keep the URL.
+        content: "{url}"
+    references:
+      - type: github
+        name: "Deflate repo (lit {lit_id})"
+        description: The research repo (agents/reader.md, feature registry, memory CLI)
+        instructions: Read it. Do not push.
+        value: {urls: ["{repo_url}"]}
+    kickoff: "@{reader} {lit_id} round {round}: read and brainstorm {url}"
