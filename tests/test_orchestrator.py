@@ -1,3 +1,5 @@
+import os
+os.environ["QS_CHANNEL_PREFIX"] = ""   # tests pin bare room names; the prefix is checked in test_channel_prefix
 import json
 import re
 from pathlib import Path
@@ -295,3 +297,9 @@ def test_refreeze_allowed_until_first_trial(env):
     write_spec(root, "h1")
     a = o.handle(msg("@orchestrator freeze h1 specs/h1.yaml", "coder", "room-1"))   # after a trial: locked
     assert "freeze refused" in bodies(a)[0]
+
+
+def test_channel_prefix(monkeypatch):
+    from qs.orchestrator import _ch
+    monkeypatch.setenv("QS_CHANNEL_PREFIX", "deflate-")
+    assert _ch("h1-expiry-mom") == "deflate-h1-expiry-mom" and _ch("deflate-control") == "deflate-control"

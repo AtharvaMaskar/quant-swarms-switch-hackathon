@@ -7,6 +7,7 @@ ranked, round:{hid}, opened:{r}, lit:{lit_id}.
 from __future__ import annotations
 
 import json
+import os
 import logging
 import re
 import sqlite3
@@ -42,6 +43,12 @@ resources:
     agents: ["{orchestrator}"]
     users: ["{human}"]
 """
+
+def _ch(name: str) -> str:
+    """Channel name with a shared prefix so Deflate channels group together in a busy workspace."""
+    pre = os.environ.get("QS_CHANNEL_PREFIX", "deflate-")
+    return name if name.startswith(pre) else pre + name
+
 
 Action = tuple[str, dict]
 log = logging.getLogger("qs.orchestrator")
@@ -203,7 +210,7 @@ class Orchestrator:
         self._set(f"round:{hid}", r)
         card = json.loads(h["card"])
         res = self._do("create_room", template_yaml=HYP_TEMPLATE.read_text(),
-                       inputs={"hid": hid, "room": ids.room_name(hid, h["slug"]), "slug": h["slug"], "round": r,
+                       inputs={"hid": hid, "room": _ch(ids.room_name(hid, h["slug"])), "slug": h["slug"], "round": r,
                                "spec_doc": json.dumps(card, indent=2)})
         rid = res["room_id"]
         self.con.execute("UPDATE hypotheses SET room_id=? WHERE id=?", (rid, hid))
@@ -214,8 +221,8 @@ class Orchestrator:
         if (pid := memory.paper_id(src.get("url") or f"{src.get('type')}:{src.get('id')}")) \
                 and (lit := self._meta(f"lit:{pid[0]}")):
             self._do("link", child_room=rid, parent_room=lit, label="from paper")
-        db.log(self.con, "decision", f"opened room {ids.room_name(hid, h['slug'])}", room_id=rid, hyp_id=hid)
-        self._post(self.ctl, f"{hid} round {r}: room {ids.room_name(hid, h['slug'])} opened")
+        db.log(self.con, "decision", f"opened room {_ch(ids.room_name(hid, h['slug']))}", room_id=rid, hyp_id=hid)
+        self._post(self.ctl, f"{hid} round {r}: room {_ch(ids.room_name(hid, h['slug']))} opened")
 
     def _on_fork(self, c, room, name):
         par, r = c["hid"], self.round
@@ -346,7 +353,7 @@ class Orchestrator:
         db.signoff(self.con, hid, "approve", name)
         db.log(self.con, "signoff", f"approved by {name}", room_id=room, author=name, hyp_id=hid)
         db.set_status(self.con, hid, "signed")
-        pname = "paper-" + hid.lower().replace(".", "-")
+        pname = _ch("paper-" + hid.lower().replace(".", "-"))
         prid = self._do("create_room", template_yaml=PAPER_YAML, inputs={"hid": hid, "room": pname})["room_id"]
         self._do("link", child_room=prid, parent_room=h["room_id"], label=f"paper desk for {hid}")
         self._post(prid, f"{hid} round {r}: approved by {name}; paper desk {'starting' if self.desk else 'not wired'}")
@@ -415,7 +422,7 @@ class Orchestrator:
                 return
         else:
             rid = self._do("create_room", template_yaml=LIT_TEMPLATE.read_text(),
-                           inputs={"lit_id": lit_id, "room": f"lit-{lit_id}", "round": r, "url": url})["room_id"]
+                           inputs={"lit_id": lit_id, "room": _ch(f"lit-{lit_id}"), "round": r, "url": url})["room_id"]
             self._set(f"lit:{lit_id}", rid)
             self._do("link", child_room=rid, parent_room=self.ctl, label=f"paper {lit_id}")
             db.log(self.con, "reference", json.dumps({"lit_id": lit_id, "url": url, "ref": c["ref"], "by": name}),
