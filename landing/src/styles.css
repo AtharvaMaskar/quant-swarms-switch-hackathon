@@ -734,3 +734,14 @@ html.has-cursor, html.has-cursor * { cursor: none !important; }
 .pull figcaption a { color: var(--ink); text-underline-offset: 3px; }
 .credits q { display: block; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--rule); color: var(--ink); font-weight: 600; quotes: '“' '”'; }
 .credits ul { margin-top: 48px; }
+
+/* Manifesto v3: quiet, scroll-lit. A pause, not a shout. */
+.manifesto.quiet { background: var(--ink); color: #fff; --dim: #8A8A93; }
+.manifesto.quiet .sticky { align-content: center; padding: 0 var(--pad); }
+.manifesto.quiet .mlabel { color: #6E6E78; margin-bottom: 40px; }
+.manifesto-line { font: 300 clamp(2.5rem, 5.2vw, 5.5rem)/1.08 var(--sans); font-stretch: 100%; letter-spacing: -0.02em; text-transform: none; }
+.manifesto-line .ml { display: block; }
+.manifesto-line span span { display: inline-block; white-space: pre; transition: opacity 0.15s linear, transform 0.15s linear; }
+.manifesto-line .em { color: var(--lav); font-weight: 500; }
+.manifesto-after { margin-top: 44px; font: 500 0.8125rem/1 var(--mono); letter-spacing: 0.08em; color: #6E6E78; }
+@media (max-width: 900px) { .manifesto-line .ml { display: inline; } }

@@ -5,7 +5,7 @@ import { expectedMaxSharpe } from './stats.ts'
 import { NAME, SWITCH_URL, GITHUB_URL, STAGES, CHECKS, gate, loopState, CANDIDATES, BOARD, FAQ } from './data.ts'
 import { useBeat, useInView, useReveal } from './hooks.ts'
 import { Hero, Nav, Ticker } from './Hero.tsx'
-import { BigMarquee, DitherBg, GrainBg, Odometer, startMotion, useFlip } from './fx.tsx'
+import { BigMarquee, DitherBg, Odometer, startMotion, useFlip } from './fx.tsx'
 
 const clamp = (v: number) => Math.max(0, Math.min(1, v))
 type Theme = 'dark' | 'paper' | 'electric'
@@ -350,17 +350,29 @@ function Faq() {
   )
 }
 
-const MANIFESTO = 'AI exists, so we can explore the extreme ends of human excellence.'.split(' ')
+// Quiet, scroll-lit close: each word lights as the pinned section scrolls; "excellence." finishes in lavender.
+const MANIFESTO = ['AI exists, so we can', 'explore the extreme ends', 'of human excellence.']
 function Manifesto() {
   const ref = useRef<HTMLElement>(null), p = useBeat(ref)
+  const reduce = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches
+  const words = MANIFESTO.map(l => l.split(' '))
+  const total = words.flat().length
+  let n = 0
   return (
-    <section className="manifesto electric" data-beat="manifesto" data-theme="electric" data-pin ref={ref} style={{ height: '220vh' }}>
+    <section className="manifesto quiet" data-beat="manifesto" data-theme="dark" data-pin ref={ref} style={{ height: '220vh' }}>
       <div className="sticky">
-        <GrainBg />
         <p className="mlabel layer">14 / WHY</p>
-        <p className="manifesto-text layer">
-          {MANIFESTO.map((w, i) => <span key={i} className={`${p > (i / MANIFESTO.length) * 0.7 + 0.05 ? 'on' : ''} ${w.startsWith('excellence') ? 'mark' : ''}`}>{w} </span>)}
+        <p className="manifesto-line layer" aria-label={MANIFESTO.join(' ')}>
+          {words.map((line, li) => (
+            <span key={li} className="ml" aria-hidden="true">
+              {line.map(w => {
+                const i = n++, lit = reduce ? 1 : clamp((p - 0.08 - (i / total) * 0.6) / 0.08)
+                return <span key={i} className={w.startsWith('excellence') ? 'em' : ''} style={{ opacity: 0.18 + 0.82 * lit, transform: `translateY(${(1 - lit) * 4}px)` }}>{w} </span>
+              })}
+            </span>
+          ))}
         </p>
+        <p className="manifesto-after layer">every trial counted · every idea earned</p>
       </div>
     </section>
   )
@@ -370,7 +382,7 @@ const AFML = 'https://www.wiley.com/en-us/Advances+in+Financial+Machine+Learning
 const CREDITS: [string, React.ReactNode, string][] = [
   ['Switch', 'Chat rooms where AI agents and people work together. The platform this runs on.', 'https://switchagents.ai'],
   ['López de Prado', <>Advances in Financial Machine Learning: purged CV, CPCV, Deflated Sharpe, PBO, strategy failure. <q>The purpose of a backtest is to discard bad models, not to improve them.</q> <cite>CH. 11</cite></>, AFML],
-  ['After42', '“Can AI Propose Interesting Research Questions?” The question behind the ranker.', ''],
+  ['After42', '“Can AI Propose Interesting Research Questions?” The question behind the ranker.', 'https://after42.org/research/can-ai-propose-interesting-research-questions/'],
   ['IdeaTaste', 'arXiv 2611.03424. The method behind learning taste from outcomes.', 'https://arxiv.org/abs/2611.03424'],
 ]
 function Credits() {
