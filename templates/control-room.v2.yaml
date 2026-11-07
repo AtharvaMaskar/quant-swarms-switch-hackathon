@@ -2,7 +2,7 @@
 # Created once per run. {hid} is the next free hypothesis id, so the kickoff is unique per run.
 version: 2
 params:
-  bridge: {type: bridge, description: Messaging app for the room (Slack if set up, else the first e.g. Mattermost), default: [Slack, $first], required: false}
+  bridge: {type: bridge, description: "Messaging app for the room: Slack if set up, otherwise the first one (Mattermost here)", default: [Slack, $first], required: false}
   human: {type: string, default: user, description: Messaging-app username of the human risk owner}
   hid: {type: string, description: Next free hypothesis id (h13)}
   round: {type: number, default: 1, description: Loop round}

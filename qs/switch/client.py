@@ -75,7 +75,8 @@ class SwitchAgent:
     def op(self, name: str, **args) -> Any:
         r = self.http.post(f"/agents/{self.agent_id}/ops/{name}", json=args,
                            headers={"X-Switch-Connection-Id": self.connection_id})
-        r.raise_for_status()
+        if r.is_error:   # surface Switch's reason (template validation codes etc.), not just the status
+            raise httpx.HTTPStatusError(f"{r.status_code} on {name}: {r.text[:2000]}", request=r.request, response=r)
         return r.json()["result"]
 
     def post(self, room_id: str, content: str) -> dict:
