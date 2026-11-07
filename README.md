@@ -19,41 +19,60 @@ Producing ideas is no longer the bottleneck. The bottleneck is deciding honestly
 
 1. **Agents propose.** Three proposers (literature, post-mortems, contrarian) and a paper reader write five-slot hypothesis cards.
 2. **Code decides.** A deterministic gate that agents cannot edit runs AFML checks on a frozen spec. Every run is a counted trial.
-3. **Humans sign off.** A gate pass gets one holdout touch, then a human approves or rejects it in the Switch room.
+3. **Humans sign off.** A gate pass gets one holdout touch, then a human approves or rejects it in the hypothesis's Slack thread.
 4. **Paper trading.** Approved strategies run the same engine and spec on a live (replayed) tick feed.
 5. **Decay retires.** CUSUM, Chu-Stinchcombe-White, Lempel-Ziv entropy and rolling PSR watch paper P&L. Two alarms in 10 sessions retire the strategy.
 6. **Learnings fork.** Dead ends and retired strategies write post-mortems to memory and can fork new hypotheses. Forks inherit the family's trial count, so the bar never resets.
 
 ## How Switch is used
 
-Switch is the backbone, not a notification channel. **Without Switch the project stops working:** there is no other UI, no other way for agents to hand off work, and no other place where a human can approve a strategy.
+Switch is the backbone, not a notification channel. The messaging app is **Slack** (a company workspace, through Switch's Slack bridge). Everything a human sees happens in **one Slack channel, `#deflate-control`**:
+
+- **Each hypothesis is a thread** in that channel, e.g. `🧪 h2 · vix-gated-drift`. Spec, freeze, verify, gate receipt, patches, hard stop and sign-off all happen in the thread.
+- **Each paper is a thread** under the human's `deflate implement …` message. The reader brainstorms there.
+- **The paper desk reports in the hypothesis thread** (fills, daily P&L, decay alarms, retirement).
+- **Forks carry lineage in the thread title** (`🧪 h1.1 · expiry-volgate · forked from h1`).
+
+The hierarchy (families, patches, forks, trial counts) lives in `research.db` and in Switch. It does not live in channel names: hundreds of strategies can't mean hundreds of channels. Thread mode is `QS_THREADS=1` (the default). Per-room channels still exist (`QS_THREADS=0`: a channel per hypothesis, lit and paper room, all prefixed `deflate-`, linked with `link_rooms`), but we don't use them.
 
 | Switch feature | What Deflate does with it |
 |---|---|
-| **Control room** (`templates/control-room.v2.yaml`) | Proposers, judge, orchestrator and the human. Cards are proposed, judged and ranked here; round summaries land here. |
-| **Per-hypothesis rooms** from **v2 YAML templates** (`templates/hypothesis-room.v2.yaml`) | One room per hypothesis (`h12-expiry-mom`), created with `create_room_from_yaml`. The template wires exclusive roles, a spec room doc, a GitHub repo reference, the creator as a user, and a kickoff that carries `{hid} round {round}` so Switch's loop guard never pauses it. |
-| **`lit-` rooms** (`templates/lit-room.v2.yaml`) | "Implement this paper": `@reader implement <arXiv id>` opens `#lit-arxiv-2611-03424`, where the reader and the human brainstorm with memory. |
-| **`link_rooms`** | Fork rooms link to their parent ("forked from h12"), lit rooms to control ("paper …"), hypothesis rooms to their paper ("from paper"), paper rooms to their hypothesis. Room links are the visible research tree. |
-| **Roles** | `proposer`, `judge`, `coder`, `verifier`, `validator`, `reader`, each with role instructions from the template. Briefs live in `agents/*.md`. |
-| **Registered `always_on` agent over HTTP + SSE** | The orchestrator is our own Python process registered with `POST /agents/register-known`. It listens on `GET /agents/{id}/events?filter=addressed` and acts through `POST /agents/{id}/ops/{op}` (post, mention, create room, link). It is the deterministic state machine Switch itself doesn't have. |
-| **@-mention hand-offs** | Every step is an @-mention: `@coder` builds, `@orchestrator freeze`, `@verifier` checks, `@validator` explains, `@judge` compares, `@proposer-lead` writes the post-mortem. |
-| **Sign-off in the room** | The orchestrator @-mentions the humans with the full report. Only names passed in `--humans` can `approve`, `reject`, `stop` or `resume`. Each decision is stored as calibration data. |
-| **Paper rooms** | `#paper-h12-1v3`, one per approved strategy: fills, daily P&L, decay alarms, the retirement notice. |
+| **Control room** from a **v2 YAML template** (`templates/control-room.v2.yaml`) | Created on first run as `#deflate-control` on the bridge named by `QS_BRIDGE`. Proposers, judge, reader, coder, verifier, validator, orchestrator and the human are all in it. |
+| **Threads** (`post_message` with `thread_id`) | One thread per hypothesis and per paper. The orchestrator's room ids for them are `"<channel>#<thread root>"`, so every post and @-mention lands in the right thread. |
+| **One-click agent templates** (`templates/deflate-agents.v2.yaml`) | Creates every Claude Code agent (proposers, judge, reader, coder, verifier, validator) with its brief in `agents/*.md` and the repo as its working directory. |
+| **Roles** | `proposer`, `judge`, `coder`, `verifier`, `validator`, `reader`, each with role instructions from the template. |
+| **Registered `always_on` agent over HTTP + SSE** | The orchestrator is our own Python process, registered once with `scripts/switch_register.py`. It listens to **all** room messages on `GET /agents/{id}/events` and acts through `POST /agents/{id}/ops/{op}` (post, mention, thread, create room, read context, download media). It is the deterministic state machine Switch itself doesn't have. |
+| **@-mention hand-offs** | Every step is an @-mention: `@coder` builds, `@verifier` checks, `@validator` explains, `@judge` compares, `@proposer-lead` writes the post-mortem. |
+| **Sign-off in the thread** | The orchestrator @-mentions the humans with the full report. Only names passed in `--humans` (Slack display names) can `approve`, `reject`, `stop` or `resume`. Each decision is stored as calibration data. |
+| **Media store** | SSRN papers arrive as a PDF attached in the thread; the orchestrator pulls it from Switch's media store on `deflate attach <lit_id>`. |
+| **Slack bridge** | The only UI. Switch carries every agent and human message between Slack and the agents. |
+
+## What breaks without Switch
+
+Switch is central (judging criterion 1). Take it away and this is what stops:
+
+1. **The agents.** Proposers, judge, reader, coder, verifier and validator are Switch agents created from our template. Without Switch they don't exist as a team: nothing wakes them, nothing gives them a room.
+2. **Hand-offs.** Every step (propose → judge → code → freeze → verify → gate → validator → patch or post-mortem) is an @-mention routed by Switch. There is no queue, no RPC and no other channel between agents.
+3. **The orchestrator's input.** It has no API of its own. Its only input is Switch's event stream (SSE), and its only output is Switch ops. Without Switch it receives no commands and can post nothing.
+4. **Human sign-off.** `approve`, `reject`, `stop` and `resume` are checked against the sender Switch reports. There is no other place to sign off.
+5. **Slack.** The Slack channel and its threads exist only through Switch's Slack bridge. We have no Slack bot of our own.
+6. **The floor dashboard's live state.** It is meant to read who is online and what is happening from Switch, and to show "Switch offline" when it can't (see Dashboards).
+
+What survives without Switch: the engine, the gate, `research.db` and the leaderboard. You could still run `qs.cli trial` by hand. That's a backtester, not a research floor.
 
 ## Architecture
 
 ```
-            +---------------------- Switch workspace -----------------------+
-            |  #deflate-control  (proposers, judge, orchestrator, human)     |
-            |     | create_room_from_yaml          @reader implement <arXiv> |
-            |     v                                         v                |
-            |  #h12-expiry-mom --link "forked from"--> #h12-1-expiry-volgate |
-            |  (coder, verifier, validator, human;      #lit-arxiv-2611-03424|
-            |   spec doc, repo ref)                     (reader, human)      |
-            |  #paper-h12-1v3  (fills, P&L, decay alarms)                    |
-            +--------------^----------------------------------^-------------+
-                           | agent protocol (HTTP + SSE)      |
-     +---------------------+-----------+          +-----------+-----------+
+  +----------------------- Switch (Slack bridge, QS_BRIDGE) ------------------------+
+  |  #deflate-control  (proposers, judge, reader, coder, verifier, validator,       |
+  |                     orchestrator, human)                                        |
+  |    ├─ thread 🧪 h1 · gap-continuation        spec, gate receipt, patches, stop  |
+  |    ├─ thread 🧪 h1.1 · … · forked from h1    lineage in the title               |
+  |    ├─ thread under "deflate implement <arXiv>"  paper card, reader brainstorm   |
+  |    └─ paper desk posts in the hypothesis thread (fills, P&L, decay, retire)     |
+  +---------------^-----------------------------------------^-----------------------+
+                  | agent protocol (HTTP + SSE)             |
+     +------------+--------------------+          +---------+-------------+
      | Orchestrator (qs/orchestrator)  |          | Paper desk (qs/paper) |
      | state machine, budgets, naming, |          | TBT replay feed, same |
      | hard stops, kickoffs, sign-off  |          | engine, decay monitors|
@@ -66,7 +85,7 @@ Switch is the backbone, not a notification channel. **Without Switch the project
      | ->net P&L  |  | verdict             |  | frozen, holdout once    |
      +------------+  +---------------------+  +------------+------------+
                                                            |
-                                              qs.web leaderboard :8765
+                               qs.web leaderboard :8765 · floor/ research floor :8766
 ```
 
 **Deterministic (our code):** orchestrator, engine, gate, cost model, DB, trial runner, paper desk, monitors, leaderboard.
@@ -99,7 +118,7 @@ Thresholds live in `config/gate.yaml` (sha256-hashed; the hash is stamped on eve
 
 **Calibration (§7.3).** No-skill fixtures go through the full gate on every config change: random entries, pure long exposure, a planted look-ahead leak, and the best of 100 random strategies. The gate must reject at least 95% of each. Run `uv run python -m qs.cli calibrate`; the reject rates are written to the DB and shown in the leaderboard header.
 
-**The DEMO GATE, honestly.** A real-gate pass is rare by design, and one evening of research is unlikely to produce one. To show the whole loop on video (sign-off → paper → decay → retire) we added `config/gate.demo.yaml`. It has the same checks with looser thresholds (PSR/DSR 0.50, PBO 0.50, CPCV 50% positive, 20 bets) and is hashed like the real one. Every verdict, room post and leaderboard row that comes from it is stamped **DEMO GATE (looser thresholds)**, and the leaderboard shows the real-gate verdict next to it.
+**The DEMO GATE, honestly.** A real-gate pass is rare by design, and one evening of research is unlikely to produce one. To show the whole loop on video (sign-off → paper → decay → retire) we added `config/gate.demo.yaml`. It has the same checks with looser thresholds (PSR/DSR 0.50, PBO 0.50, CPCV 50% positive, 20 bets) and is hashed like the real one. Every verdict, room post and leaderboard row that comes from it is stamped **DEMO GATE (looser thresholds)**, and the leaderboard shows the real-gate verdict next to it. In practice nothing passed the demo gate either (see Results so far).
 
 ## Costs and slippage
 
@@ -135,68 +154,97 @@ Splits: sandbox 2022-01 → 2022-06 (sanity probes only), research 2022-07 → 2
 
 `data/` is gitignored. `scripts/build_data.py` rebuilds it by copying from the author's local research store and writes `data/BUILD_LOG.md` with source paths, sha256 and row counts. To use your own data, put parquet files with the same schema at the same paths.
 
+## Results so far (honest)
+
+- **The real gate rejected everything we tried.**
+- **An 8-trial counted search** (one family, `research.demo-search.db`, `specs/demo/`) found nothing that passes even the demo gate. The closest was **h1.2.3, gap continuation in calm regimes**: DSR 0.44, PBO 0.65, 79% of P&L in its top 5 days, and a storytelling clause the ablation caught. Thresholds stay untouched.
+- **Calibration:** the no-skill fixtures were rejected 100% on real data.
+- **So the demo is "honest no + labelled walkthrough".** The video shows the real FAIL receipts, then runs sign-off → paper → decay on h1.2.3 with every post stamped `REJECTED BY GATE · pipeline demo, not a recommendation` (see `docs/demo-script.md`). A gate that says no to everything an evening of research produced is the product working.
+
 ## Quickstart
 
-Requires Python 3.12+, [uv](https://docs.astral.sh/uv/) and Node 20+.
+Requires Python 3.12+, [uv](https://docs.astral.sh/uv/) and Node 20+. If the shared uv cache is locked, prefix `uv` commands with `UV_CACHE_DIR=/tmp/uv-cache` (any private path).
 
 ```bash
 # 1. Python env + data
 uv sync
 uv run python scripts/build_data.py
 uv run pytest -q
+```
 
-# 2. Switch: run the Console local server on a free port (3000 is often taken),
-#    then Gateway -> API Keys -> create a registration key, and put it in .env:
-#      SWITCH_URL=http://localhost:3100
-#      SWITCH_REG_TOKEN=...
+2. **Switch.** Run the Switch Console local server on a free port (3000 is often taken). Console v0.40.1 has no API Keys screen: the registration token is the server's `AGENT_REGISTRATION_TOKEN`, in its `run/switch-core.env`.
+3. **Slack.** Create the Slack app from Switch's manifest. For a company workspace, delete the `agent_view` block from the manifest first. Connect it in Console as a bridge; the connection's name is what goes in `QS_BRIDGE`.
+4. **`.env`** (gitignored). Key names:
+
+```bash
+SWITCH_URL=http://localhost:3100
+SWITCH_REG_TOKEN=...                 # the server's AGENT_REGISTRATION_TOKEN
+QS_BRIDGE="My Company Slack"         # the Slack connection's name; quote values with spaces
+QS_ENGINE_REF=feat/deflate           # the engine-integrity check compares qs/, config/, ref/ to this committed ref
+QS_THREADS=1                         # default: one channel, a thread per hypothesis/paper (0 = a channel each)
+QS_CHANNEL_PREFIX=deflate-           # default prefix for every channel Deflate creates
+```
+
+```bash
 set -a; source .env; set +a
 
-# 3. Register the orchestrator as an always_on agent (writes SWITCH_AGENT_ID / SWITCH_API_KEY to .env)
+# 5. Register the orchestrator as an always_on agent (writes SWITCH_AGENT_ID / SWITCH_API_KEY to .env)
 uv run python scripts/switch_register.py
 set -a; source .env; set +a
 ```
 
-4. **Register the Claude Code agents in Console**, one per role, with these names and briefs: `proposer-card`, `proposer-lead`, `proposer-contrarian` (`agents/proposer.md`), `judge` (`agents/judge.md`), `coder`, `verifier`, `validator`, `reader` (each with its own file in `agents/`). Give every agent a deny rule on writes to `qs/`, `config/`, `ref/`, `data/` and `research.db`.
+6. **Create the agents** in Console → Templates with one click from `templates/deflate-agents.v2.yaml`. If a partial run already created some, use `templates/deflate-agents-rest.v2.yaml` for the rest. Each agent reads its brief from `agents/*.md` and is told never to edit `qs/`, `config/`, `ref/` or any database; the engine-integrity check refuses a trial if those differ from `QS_ENGINE_REF` anyway.
 
 ```bash
-# 5. Run the orchestrator. It creates #deflate-control on first run.
-uv run python -m qs.cli run-orchestrator --humans <your-switch-name>      # real gate
-uv run python -m qs.cli run-orchestrator --humans <your-switch-name> --demo   # stamped demo gate
+# 7. Run the orchestrator. It creates #deflate-control on first run.
+uv run python -m qs.cli run-orchestrator --humans "<Slack display name>"          # real gate
+uv run python -m qs.cli run-orchestrator --humans "<Slack display name>" --demo   # stamped demo gate
 
-# 6. The leaderboard, on http://127.0.0.1:8765 (refreshes every 5 s)
-uv run python -m qs.web
+# 8. Dashboards
+uv run python -m qs.web              # leaderboard, http://127.0.0.1:8765 (refreshes every 5 s)
+uv run python -m floor.server        # research floor, http://127.0.0.1:8766 (in progress)
 
-# 7. The landing page (the opening of the demo); its CTA goes to VITE_SWITCH_URL
+# 9. The landing page (the opening of the demo); its CTA goes to VITE_SWITCH_URL
 cd landing && npm install && npm run dev
 ```
 
-Other commands: `qs.cli calibrate [--demo]`, `qs.cli trial <hid> [--demo]`, `qs.cli leaderboard`, `qs.cli demo-seed` (three sample cards), `qs.cli memory search|show|deadends|features`.
+Other commands: `qs.cli calibrate [--demo]`, `qs.cli trial <hid> [--demo]`, `qs.cli leaderboard`, `qs.cli demo-seed` (three sample cards), `qs.cli memory search|show|deadends|features`, `qs.cli paper fetch <url>`.
+
+**Mattermost** also works as a bridge (`QS_BRIDGE` names it), but its container ran out of memory under emulation on Apple Silicon, so we moved to Slack.
+
+## Dashboards
+
+- **Leaderboard** (`qs.web`, :8765): every counted trial, reference rows pinned, DEMO GATE badges beside the real verdict, calibration reject rates in the header.
+- **Research floor** (`floor/`, :8766), **in progress.** One live screen: KPIs, a board of hypotheses by stage (one card per patch line), the fork lineage, papers, and a drawer per hypothesis with its card, frozen spec, every trial's receipt and checks, sign-off and paper desk. It reads `research.db` read-only and pushes updates over SSE. Reading live state from Switch (agents online, what's happening in the channel) and a "Switch offline" banner when Switch is down are being added.
 
 ## Commands reference
 
-Type these in any Switch room the agent is in.
+Send these in `#deflate-control` or in any Deflate thread. Every command works as `deflate <cmd> …` (preferred) or `@orchestrator <cmd> …`.
+
+Why `deflate` first: the orchestrator is registered with Switch's bootstrap registration token, so Switch auto-replies "not permitted" to @-mentions of it. The orchestrator listens to every room message and acts on the command anyway, but `deflate …` avoids the noise.
 
 | Message | Who | Effect |
 |---|---|---|
-| `@reader implement <arXiv/SSRN url or id>` | anyone | the reader forwards it to the orchestrator, which opens `#lit-<id>` |
-| `@reader propose` | human, in a lit room | the reader posts its cards as `@orchestrator propose {…}` |
-| `@orchestrator implement <url or id>` | anyone | open the lit room directly |
-| `@orchestrator propose {card JSON}` | proposers, reader | register a card; it gets filtered, judged and ranked |
-| `@orchestrator h12 round 3: {"prefer": "A", "reason": "…"}` | judge | pairwise verdict; the winner gets a room |
-| `@orchestrator freeze h12 specs/h12.yaml` | coder | hash and freeze the spec, then ask the verifier |
+| `deflate implement <arXiv/SSRN url or id>` | anyone | open a paper thread under your message. arXiv: LaTeX source is parsed with exact equations. SSRN: the orchestrator asks you to attach the PDF |
+| `deflate attach <lit_id>` | anyone | read the latest PDF attached in that paper thread |
+| `@reader propose` | human, in a paper thread | the reader posts its cards as `deflate propose {…}` |
+| `deflate propose {card JSON}` | proposers, reader | register a card; it gets filtered, judged and ranked |
+| `deflate h12 round 3: {"prefer": "A", "reason": "…"}` | judge | pairwise verdict; the winner gets a thread |
+| `deflate freeze h12 specs/h12.yaml` | coder | hash and freeze the spec, then ask the verifier (the path must be `specs/<hid>.yaml`) |
 | `verified h12 round 3: <note>` | verifier | run the research trial through the gate |
-| `@orchestrator approve h12` | humans only | sign off: opens `#paper-h12` and starts the desk |
-| `@orchestrator reject h12 <note>` | humans only | reject; the note is stored as calibration |
-| `@orchestrator fork h12 <slug>` | anyone | fork a dead or retired hypothesis into `h12.1` (same family) |
-| `@orchestrator status` | anyone | list hypotheses and statuses |
-| `@orchestrator stop` / `resume` | humans only | stop or resume opening rooms and rounds |
+| `deflate approve h12` | humans only | sign off and start the paper desk, which reports in the hypothesis thread |
+| `deflate reject h12 <note>` | humans only | reject; the note is stored as calibration |
+| `deflate fork h12 <slug>` | anyone | fork a dead or retired hypothesis into `h12.1` (same family, new thread) |
+| `deflate status` | anyone | list hypotheses and statuses |
+| `deflate stop` / `resume` | humans only | stop or resume opening threads and rounds |
 
 ## Limitations
 
 - **Survivorship.** The stock universe is the current F&O list. Stocks are not in tonight's loop, but the bias is real when they are.
 - **Options are EOD only.** There are no intraday option strategies.
 - **The holdout is contaminated.** The prior project saw 2025-07 → 2026-09. Every holdout result is flagged "seen by a prior project", and the 987 prior trials are reported, not counted.
-- **Demo gate.** The pass in the video is a DEMO GATE pass, not a real-gate pass. The leaderboard shows both verdicts.
+- **No pass yet.** Nothing has passed the real gate or the demo gate. The sign-off → paper → decay part of the video is a labelled walkthrough on a rejected strategy, not a recommendation.
+- **The floor dashboard is in progress.** It reads `research.db`; live Switch state is being added.
 - **Same model family.** The judge and the proposers all run on Claude. The design calls for a different family for the judge (IdeaTaste); we ran out of time.
 - **Live feed is a replay.** The paper desk replays a recorded Choice TBT session. The RPA-token live feed is not wired.
 - **Unverified rates.** Some costs carry `verify: true` (Groww F&O brokerage, 2026 STT, pre-2024 exchange slabs).

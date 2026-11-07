@@ -108,10 +108,10 @@ function Ours() {
 }
 
 const FLOOR = [
-  ['A control room', 'One room watches the whole floor: what is open, what is on paper, which alarms tripped, every family’s trial count.', 0],
-  ['A room per hypothesis', 'Proposal, frozen spec, code, patches (h12v2, h12v3) and the gate verdict live in one thread.', 0.12],
-  ['Fork rooms, linked', 'A fork opens a new room, h12.1, linked to its parent and carrying the family’s trial count.', 0.44],
-  ['Sign-off in the room', 'Nothing reaches paper until the risk owner reads the evidence there and approves it.', 0.76],
+  ['One control channel', 'One Slack channel watches the whole floor: what is open, what is on paper, which alarms tripped, every family’s trial count.', 0],
+  ['A thread per hypothesis', 'Each hypothesis is a Switch room, shown as a thread in that one channel. Proposal, frozen spec, code, patches (h12v2, h12v3) and the gate verdict live there.', 0.12],
+  ['Forks, with lineage', 'A fork opens a new thread, h12.1, its parent in the title and the family’s trial count on its back.', 0.44],
+  ['Sign-off in the thread', 'Nothing reaches paper until the risk owner reads the evidence there and approves it.', 0.76],
 ] as const
 function Solution() {
   const ref = useRef<HTMLElement>(null), p = useBeat(ref)
@@ -120,7 +120,7 @@ function Solution() {
     <Pin beat="solution" id="solution" p={ref} theme="dark">
       <Label n="05">The solution</Label>
       <Mask lines={['So the floor', 'moved into', 'Switch.']} />
-      <p className="body" data-reveal>This page is context. The product lives in Switch, where agents and people share chat rooms.</p>
+      <p className="body" data-reveal>This page is context. The product lives in Switch, where agents and people share one Slack channel, a thread per idea.</p>
       <ol className="rows" data-reveal>
         {FLOOR.map(([t, d], i) => <li key={t} className={i === cur ? 'on' : i < cur ? 'done' : ''}><span className="rn tab">0{i + 1}</span><div><b>{t}</b><span>{d}</span></div></li>)}
       </ol>
@@ -130,9 +130,9 @@ function Solution() {
 }
 
 const CHAT: [string, React.ReactNode, number][] = [
-  ['researcher', <><kbd>@reader</kbd> <kbd>implement</kbd> arxiv.org/abs/2611.03424</>, 0],
-  ['@reader', 'Opened #lit-arxiv-2611-03424. Read it. Memory: two similar ideas died (costs, decay), one is live.', 0.22],
-  ['researcher', 'Weekly expiries and options STT change this in India. Try bank options?', 0.46],
+  ['researcher', <><kbd>deflate</kbd> <kbd>implement</kbd> arxiv.org/abs/2103.09692</>, 0],
+  ['@reader', 'Paper thread open. Read it, equations and all. It’s a review: rough vol is testable as a vol filter; crowding only partly, we only have OI.', 0.22],
+  ['researcher', 'Good. Gate NIFTY futures on the vol forecast. Skip the crowding part.', 0.46],
   ['researcher', <><kbd>@reader</kbd> <kbd>propose</kbd></>, 0.68],
   ['@reader', 'Strategy card h43 created from the paper. Entering the loop.', 0.8],
 ]
@@ -241,9 +241,9 @@ function Forks() {
       <div className="huge-num grad" data-reveal><b className="tab">41</b><span>TRIALS h12.1 IS CHARGED WITH. NEVER 1.</span></div>
       <table className="lineage" data-reveal>
         <tbody>
-          <tr><td>h12</td><td>hypothesis room</td><td>NEW</td></tr>
-          <tr><td>h12v2</td><td>patch, same room · max 4</td><td>PATCH</td></tr>
-          <tr className={p > 0.5 ? 'on' : ''}><td>h12.1</td><td>fork, new room, linked</td><td>FORK</td></tr>
+          <tr><td>h12</td><td>hypothesis thread</td><td>NEW</td></tr>
+          <tr><td>h12v2</td><td>patch, same thread · max 4</td><td>PATCH</td></tr>
+          <tr className={p > 0.5 ? 'on' : ''}><td>h12.1</td><td>fork, new thread, lineage in title</td><td>FORK</td></tr>
         </tbody>
       </table>
     </Pin>

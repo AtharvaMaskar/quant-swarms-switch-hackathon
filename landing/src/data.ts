@@ -7,12 +7,12 @@ export const SWITCH_URL: string = import.meta.env.VITE_SWITCH_URL || 'http://loc
 export const GITHUB_URL = 'https://github.com/AtharvaMaskar2608/quant-swarms-switch-hackathon'
 
 export const STAGES = [
-  ['Propose', 'An agent posts a hypothesis in a fresh Switch room: what should work, and why.'],
+  ['Propose', 'An agent posts a hypothesis in its own Switch room, a fresh thread in one Slack channel: what should work, and why.'],
   ['Freeze the spec', 'Universe, signal, costs file and holdout dates are locked before any code exists.'],
   ['Code', 'A coding agent writes the backtest against the frozen spec, nothing else.'],
-  ['Verify', 'A second agent hunts look-ahead, leakage and missing costs. Patches stay in the room as h12v2, h12v3, with a hard stop after four.'],
+  ['Verify', 'A second agent hunts look-ahead, leakage and missing costs. Patches stay in the thread as h12v2, h12v3, with a hard stop after four.'],
   ['The gate', 'Deterministic statistics, no model in the loop. Same inputs, same verdict, every time.'],
-  ['Sign-off', 'The risk owner reads the evidence in the room and says yes or no.'],
+  ['Sign-off', 'The risk owner reads the evidence in the thread and says yes or no.'],
   ['Paper trading', 'Survivors trade on paper, with Indian costs and slippage applied.'],
   ['Decay watch', 'CUSUM and entropy alarms watch live returns for the edge fading.'],
   ['Retire', 'When an alarm trips, the strategy stops. No appeals.'],
@@ -51,11 +51,11 @@ export const BOARD = [
 ]
 
 export const FAQ = [
-  ['What is Switch’s role?', 'Switch is the platform; this page is only context. The research floor runs in Switch rooms: a control room watches the floor, every hypothesis gets its own room, forks open new rooms linked to their parents, and the risk owner signs off inside the room. Agents and people share the same thread.'],
+  ['What is Switch’s role?', 'Switch is the platform; this page is only context. The research floor runs on Switch: one control channel watches the floor, every hypothesis gets a Switch room shown as a thread in that one Slack channel, forks open new threads that carry their lineage, and the risk owner signs off inside the thread. Agents and people share the same thread. Hundreds of strategies, one channel.'],
   ['Why can’t agents cheat the gate?', 'The gate is deterministic code, not a model. The spec and holdout are frozen before any code exists, a look-ahead probe runs on every backtest, every trial in a family is counted (forks inherit the count), patches stop at four, and the gate itself is calibrated on no-skill fixtures that must fail.'],
   ['Why do most strategies fail?', 'Because the best of many noisy trials looks good by luck alone: with 1,000 zero-skill trials the expected best Sharpe is 3.26 standard deviations. Our previous swarm proposed 259 candidates and promoted none. Its training winners inverted on the holdout, because being long in a rising market looked like skill.'],
   ['What data does it use?', 'Indian equity and F&O market data. The exact vendor, instruments and date range are listed in the repository; nothing on this page is a backtest of real results.'],
   ['How are Indian costs modelled?', 'One dated, configurable file: Groww brokerage of ₹20 per F&O order, STT of 0.05% on futures and 0.15% on options from 2026-04-01, exchange and SEBI fees, stamp duty, 18% GST and slippage. A rate change is a one-line edit with a date on it.'],
-  ['Can I give it a research paper?', 'Yes. Tag the reader agent in Switch with a link, for example @reader implement arxiv.org/abs/2611.03424. It opens a room for the paper, reads it, pulls memory of similar past hypotheses (what died and why, what is live), brainstorms with you how it maps to Indian markets, and @reader propose turns it into a strategy card that enters the loop. You get a tested strategy, or a reason it won’t work.'],
+  ['Can I give it a research paper?', 'Yes. Drop a link in the control channel, for example deflate implement arxiv.org/abs/2103.09692. It opens a thread for the paper, reads it (arXiv equations exactly, from the LaTeX source), pulls memory of similar past hypotheses (what died and why, what is live), brainstorms with you how it maps to Indian markets, and @reader propose turns it into a strategy card that enters the loop. You get a tested strategy, or a reason it won’t work.'],
   ['Is this live trading?', 'No. Survivors trade on paper only, with costs and slippage applied. Nothing places real orders.'],
 ]
