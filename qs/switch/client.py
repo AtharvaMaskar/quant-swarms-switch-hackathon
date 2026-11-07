@@ -96,6 +96,9 @@ class SwitchAgent:
 
     def create_room(self, template_yaml: str, inputs: dict) -> dict:
         """Returns {room_id, room_name, ...}."""
+        inputs = dict(inputs or {})
+        if os.environ.get("QS_BRIDGE") and "{bridge}" in template_yaml:   # e.g. "Choice Slack"
+            inputs.setdefault("bridge", os.environ["QS_BRIDGE"])
         return self.op("create_room_from_yaml", yaml=template_yaml, inputs=inputs)
 
     def link(self, child_room: str, parent_room: str, label: str) -> dict:
