@@ -1,0 +1,27 @@
+id: h2v2
+card:
+  lens: contrarian
+  slug: vix-gated-drift
+  contribution: filter
+  problem: "Intraday buy-and-hold on the NIFTY front future (09:21 to 15:15) earns about 0.2bp a day overall, but it loses on calm days: when the previous close of India VIX is below about 14, the average session return is around -1.9bp, and when VIX is above 14 it is around +2.6bp (my quick split over 2022-2026, not a result)."
+  motivation: "The reference row loses most of its edge in low-VIX regimes. If the session drift is pay for bearing intraday variance, it should only show up when variance is priced high. Being long only on those days would cut the reference's losing days without adding any new signal."
+  approach: "Run the buy-and-hold reference only on sessions where the previous day's India VIX close is above a threshold, and stay flat otherwise."
+  plan: "Copy specs/refs/buy_hold.yaml and add a vix feature with entry long: m == 5 and v > p.vthr. Keep the same session, wide stop and sizing. Run CPCV on the research window with a grid of vthr = [12, 14, 17], which are the VIX quartile edges in data/vix for 2022-2026."
+  mechanism: "When VIX is high, hedgers and leveraged longs de-risk into the open and overnight, and whoever takes the other side of that flow during the session is paid a variance premium. In calm regimes nobody pays that premium, and option-writer delta hedging plus retail long unwinds pull the session flat to slightly negative."
+  rule: "long at 09:21 if m == 5 and vix > p.vthr; exit 15:15 or stop_atr 50"
+  kill:
+    - "CPCV median path Sharpe <= the ref_buy_hold Sharpe over the same window"
+    - "The sign flips in more than 2 of the 5 calendar years 2022-2026 (VIX above the threshold gives a negative mean session return)"
+    - "The result disappears after dated costs (cost ratio fails)"
+instrument: {segment: futures, underlying: NIFTY}
+session: {start: "09:20", end: "15:15"}
+features:
+  m: {fn: minute_of_day}
+  v: {fn: vix}
+  # patch 1: gate on VIX above its own trailing 250-day median (prior days only) instead of the in-sample fixed 14
+  vq: {fn: quantile, feature: v, q: 0.5, days: 250}
+entry:
+  long: "m == 5 and v > vq"
+  max_per_day: 1
+exit: {stop_atr: 50, atr_days: 14, time: "15:15"}
+sizing: {risk_per_trade: 1.0, capital_inr: 14040000, max_lots: 8}

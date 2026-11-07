@@ -1,0 +1,23 @@
+id: h1
+card:
+  slug: gamma-intraday-momentum
+  contribution: replication
+  problem: "Does the return from the previous close up to 15:00 predict the direction of the last 30 minutes in NIFTY futures?"
+  motivation: "Baltussen, Da, Lammers and Martens (JFE 2021, 'Hedging demand and market intraday momentum') find this across 60+ futures markets, and it is strongest where option dealers are net short gamma. NIFTY weekly options are among the most traded in the world, so dealer hedging flow should be heavy here. Our ORB example only reads the move from the open; this card trades only the closing window and keeps the overnight gap in the signal."
+  approach: "At 15:00 take the sign of the return since the previous close, ride it to 15:25, and only act when the move is big enough to force hedging."
+  plan: "Feature ret_pc = ret_since(anchor prev_close). Entry is only allowed when minute_of_day is at least 345 (15:00 if the session starts at 09:15), one trade per day, time exit 15:25. CPCV over thr. Split the results by dte <= 1 versus the rest, since gamma peaks near expiry."
+  mechanism: "Option market makers who are short gamma have to buy into rallies and sell into falls to stay delta-hedged, and most of that rebalancing lands near the close. Leveraged-ETF and fund rebalancing push in the same direction. They pay because hedging is a constraint on them, not a bet."
+  kill: ["CPCV median path SR <= 0 after costs", "the dte <= 1 subset has a lower hit rate than dte > 1, which contradicts the gamma mechanism", "fails the cost ratio"]
+instrument: {segment: futures, underlying: NIFTY}
+session: {start: "09:20", end: "15:25"}
+features:
+  ret_pc: {fn: ret_since, anchor: prev_close}
+entry:
+  long: "minute_of_day >= 345 and ret_pc > p.thr"
+  short: "minute_of_day >= 345 and ret_pc < -p.thr"
+  max_per_day: 1
+# stop_atr is required by the schema; the card names no stop, so 1.0 daily ATR acts as a disaster stop over a 25-minute hold
+exit: {stop_atr: 1.0, atr_days: 14, time: "15:25"}
+sizing: {risk_per_trade: 0.01, capital_inr: 14040000, max_lots: 10}
+params: {thr: 0.0025}
+grid: {thr: [0.0, 0.0025, 0.005]}
