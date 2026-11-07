@@ -44,8 +44,8 @@ const TANGENT_NOTES = [
 function Tangent() {
   const ref = useRef<HTMLElement>(null), p = useBeat(ref)
   return (
-    <Pin beat="tangent" id="problem" p={ref} vh={240} theme="paper" wide>
-      <Label n="01">The tangent trap</Label>
+    <Pin beat="tangent" p={ref} vh={240} theme="paper" wide>
+      <Label n="02">The tangent trap</Label>
       <p className="kicker" data-reveal><em>Every quant knows this week.</em></p>
       <Mask className="h-sm" lines={['One idea.', 'Ten tangents.', 'Nine dead ends.']} />
       <p className="lead-line" data-reveal>Chase all ten and you lose months finding out.</p>
@@ -62,8 +62,8 @@ function Cheap() {
   const n = Math.round(12 + (max - 12) * Math.pow(clamp(p / 0.85), 1.6))
   const life = p < 0.33 ? 'MONTHS' : p < 0.66 ? 'WEEKS' : 'DAYS'
   return (
-    <Pin beat="cheap" p={ref} theme="dark">
-      <Label n="02">Alpha decay</Label>
+    <Pin beat="cheap" id="problem" p={ref} theme="dark">
+      <Label n="01">Alpha decay</Label>
       <Mask lines={['Strategies', 'got cheap.', <>Alpha got <span className="hard">scarce.</span></>]} />
       <div className="spec-panel" data-pop>
         <div className="sp-row"><span>STRATEGIES ON THE FLOOR</span><b className="tab"><Odometer value={n.toLocaleString('en-IN')} /></b></div>
@@ -433,8 +433,8 @@ export default function App() {
       <main>
         <Hero />
         <Ticker />
-        <Tangent />
         <Cheap />
+        <Tangent />
         <Worse />
         <Ours />
         <BigMarquee words={['Propose', 'Prove', 'Retire', 'Fork']} />

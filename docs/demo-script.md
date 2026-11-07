@@ -22,7 +22,7 @@
 | Act | Time | Purpose | Main screen |
 |---|---|---|---|
 | 0 · Cold open | 0:00–0:20 | Hook | Floor: h0 row |
-| 1 · The problem | 0:20–1:00 | Why this matters | Landing page chapters |
+| 1 · The problem | 0:20–1:00 | Why this matters, each half answered on screen | Landing 01 Alpha decay → board; 02 Tangent trap → Slack |
 | 2 · Switch Console | 1:00–1:55 | How the floor is built on Switch | Console, then terminal |
 | 3 · Deterministic flow | 1:55–2:35 | Agents propose, code decides | Landing loop clock, gate.yaml, a refusal |
 | 4 · A real run | 2:35–3:45 | The loop working end to end | Slack `#deflate-control` threads |
@@ -39,11 +39,18 @@
 
 Cut on the last word to the hero, "MOST BACKTESTS ARE LUCK."
 
-## Act 1 · The problem (0:20–1:00)
+## Act 1 · The problem, each half answered on screen (0:20–1:00)
 
-**Screen:** landing page. Scroll slowly through the hero, then 01 Tangent trap, 03 Swarms make it worse (pause on the luck line rising) and 04 We tried it.
+Two problem chapters, each followed by a short look at the product. These are teasers of 8–10 seconds; Acts 4 and 5 go deep.
 
-> "I build quant algorithms for retail investors. Alpha decays in days now, so the pressure is to test more ideas, faster. Every extra backtest raises the best Sharpe you can get by pure luck. An AI swarm makes that worse: it tries hundreds of ideas an hour. My last swarm ran 987 trials. None of them survived honest testing. The fix isn't fewer ideas. It's a referee the agents can't argue with." *(77 words)*
+| Time | Screen | Say |
+|---|---|---|
+| 0:20–0:32 | Landing → **01 Alpha decay**. Scroll until the counter hits DAYS and "By the time you find an edge, it's gone." lands. | "I build quant algorithms for retail investors. Edges used to last months. Now it's weeks, or days. So you have to test more ideas, faster." *(26)* |
+| 0:32–0:40 | Cut to the **floor**: the strategies-tested table, scrolling down the list. | "This is one afternoon of Deflate: every strategy tested, and every one counted." *(13)* |
+| 0:40–0:50 | Landing → **02 The tangent trap**. Let "One idea. Ten tangents. Nine dead ends." animate in. | "But every idea spawns ten tangents. Chase them by hand and you lose months on nine dead ends." *(18)* |
+| 0:50–1:00 | Cut to **Slack `#deflate-control`**: scroll past the `🧪 h…` thread roots. | "Here, each tangent is a thread with its own agents, tested in hours. And more tests bring a new problem: luck. A referee has to decide what's real." *(28)* |
+
+Then 03 "The problem, multiplied" carries the luck line into Act 3; you can show it briefly as a bridge, or cut straight to Act 2.
 
 ## Act 2 · Built on Switch Console (1:00–1:55)
 
@@ -93,7 +100,7 @@ Time-lapse the coder writing specs and the trial runs.
 
 > "Agents propose. Code decides. Humans sign off. Switch is where all of it happens. Deflate: so the backtests you keep are the ones that weren't luck." *(26)*
 
-Total voiceover: about 560 words, which leaves room to breathe.
+Total voiceover: about 570 words, which leaves room to breathe.
 
 ---
 
@@ -126,11 +133,11 @@ cd landing && npm run dev                        # or the Pages URL
 ## Recording order (not the same as the video order)
 
 Record by screen so you set each one up only once:
-1. Landing: Acts 1, 3a and 6.
+1. Landing: Acts 1 (chapters 01 and 02), 3a and 6.
 2. Console: Act 2.
 3. Editor and terminal: Acts 2d and 3b.
-4. Slack: Acts 3c and 4. Scroll the threads slowly, top to bottom.
-5. Floor: Acts 0 and 5.
+4. Slack: the Act 1 scroll past the thread roots, then Acts 3c and 4. Scroll the threads slowly, top to bottom.
+5. Floor: Acts 0, 1 (strategies-table scroll) and 5.
 6. Voiceover: read the lines above in one take per act, then cut the picture to the voice.
 
 ## If something stalls
