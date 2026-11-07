@@ -20,7 +20,7 @@
 }
 
 *, *::before, *::after { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; background: var(--indigo); overscroll-behavior-y: none; }
 body { margin: 0; background: var(--paper); color: var(--ink); font: 400 1.0625rem/1.5 var(--sans); -webkit-font-smoothing: antialiased; overflow-x: clip; }
 h1, h2, h3, p, ul, ol, figure, pre, dl, dd { margin: 0; }
 ul, ol { padding: 0; list-style: none; }
@@ -353,7 +353,8 @@ details[open] p { animation: fadein 0.45s var(--expo); }
 .footer-right { justify-self: end; align-content: start; max-width: 400px; display: grid; gap: 14px; font: 500 0.8125rem/1.6 var(--mono); color: rgba(228, 230, 255, 0.85); }
 .footer-right a { color: #fff; text-underline-offset: 4px; }
 .footer-right .fine { font-size: 0.6875rem; letter-spacing: 0.04em; color: rgba(228, 230, 255, 0.55); }
-.giant { font: 900 clamp(4rem, 17vw, 18rem)/0.78 var(--display); font-stretch: 125%; text-transform: uppercase; letter-spacing: -0.05em; color: var(--lav); margin: 0 0 -0.1em -0.04em; white-space: nowrap; }
+/* Full-bleed wordmark: edge to edge at any width, baseline cropped by a fixed share so the crop reads as intent. */
+.giant { font: 900 calc((100vw - 2 * var(--m)) / 5.45)/0.78 var(--display); font-stretch: 125%; text-transform: uppercase; letter-spacing: -0.05em; color: var(--lav); margin: 0 calc(var(--pad) * -1) -0.08em; text-align: center; white-space: nowrap; }
 
 /* ---------- Phone ---------- */
 @media (max-width: 900px) {

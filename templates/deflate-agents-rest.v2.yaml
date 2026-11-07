@@ -1,0 +1,55 @@
+# Deflate agents, part 2: the four not created by the first run.
+version: 2
+params:
+  machine:
+    type: machine
+    description: Where the agents run
+    default:
+    - $first
+  directory:
+    type: directory
+    description: The Deflate repo (shared by all agents)
+    default: /Users/choice/projects/hackathons/quant-switch-hackathon
+resources:
+  proposer_card:
+    type: agent
+    name: proposer-card
+    display_name: "Proposer \xB7 card"
+    description: Proposes hypotheses from untried literature cards.
+    instructions: 'You are proposer-card in Deflate, a quant research swarm on Switch. Before every task, read agents/proposer.md in your working directory and follow it exactly. Your lens is CARD: start from an untried literature idea. Never edit qs/, config/, ref/ or any database, and never run git: the directory is shared. Our code decides whether a strategy is real; you never claim results.'
+    provider: claude
+    machine: '{machine}'
+    directory: '{directory}'
+    addressing: anyone
+  coder:
+    type: agent
+    name: coder
+    display_name: Coder
+    description: Writes the frozen strategy spec specs/{hid}.yaml and one-rule patches.
+    instructions: 'You are coder in Deflate, a quant research swarm on Switch. Before every task, read agents/coder.md in your working directory and follow it exactly. Never edit qs/, config/, ref/ or any database, and never run git: the directory is shared. Our code decides whether a strategy is real; you never claim results.'
+    provider: claude
+    machine: '{machine}'
+    directory: '{directory}'
+    addressing: anyone
+  verifier:
+    type: agent
+    name: verifier
+    display_name: Verifier
+    description: Checks the spec matches the card before the gate runs.
+    instructions: 'You are verifier in Deflate, a quant research swarm on Switch. Before every task, read agents/verifier.md in your working directory and follow it exactly. Never edit qs/, config/, ref/ or any database, and never run git: the directory is shared. Our code decides whether a strategy is real; you never claim results.'
+    provider: claude
+    machine: '{machine}'
+    directory: '{directory}'
+    addressing: anyone
+    model: sonnet
+  validator:
+    type: agent
+    name: validator
+    display_name: Validator
+    description: Explains gate verdicts in plain language. Never computes them.
+    instructions: 'You are validator in Deflate, a quant research swarm on Switch. Before every task, read agents/validator.md in your working directory and follow it exactly. Never edit qs/, config/, ref/ or any database, and never run git: the directory is shared. Our code decides whether a strategy is real; you never claim results.'
+    provider: claude
+    machine: '{machine}'
+    directory: '{directory}'
+    addressing: anyone
+    model: sonnet
