@@ -1,59 +1,140 @@
-# Demo video script (3:30–4:00)
+# Demo video plan (target 4:30, hard cap 5:00)
 
-The plan is **honest no + labelled walkthrough**. Nothing has passed the real gate or the demo gate, so the video shows real FAIL receipts, then walks sign-off → paper → decay on a rejected strategy, stamped on every post.
+**The story in one line:** AI makes it cheap to try ideas, so it also makes it cheap to fool yourself. Deflate lets agents generate ideas freely, but on Switch, code decides what's real and a human signs off.
 
-## Before recording
+**What a judge should know by the end:**
+1. The problem is real: more backtests raise the Sharpe ratio you can get by luck.
+2. Switch is what makes this a team, not a script. It provides the rooms, roles, agent identities, hand-offs, the Slack bridge and sign-off.
+3. The flow is deterministic. Agents talk, but every verdict, budget and stop is code.
+4. It ran for real, and it says no honestly, including to our own live bot.
+
+## Pacing rules
+
+- **About 150 words a minute** of voiceover. That is ~650 words for 4:30. Every line below has its word count; keep to it.
+- **One idea per beat.** If a screen needs explaining twice, cut the screen, not the explanation.
+- **Hold every receipt for 2 seconds** after the line ends: gate FAIL grids, the patch refusal, the luck line. Zoom in (Screen Studio or a crop) so the numbers can be read.
+- **Show the real wait once, then time-lapse.** Put a "time-lapse ×8" caption on screen the first time and never fake a post.
+- **Record voice separately** over the cut picture. Record the screens first.
+- **Blur the company.** Hide the Slack sidebar (View → hide sidebar, or crop to the channel pane). Blur the workspace name and any company channels or DMs. In Console, blur the bridge name "Choice Slack".
+
+## Structure at a glance
+
+| Act | Time | Purpose | Main screen |
+|---|---|---|---|
+| 0 · Cold open | 0:00–0:20 | Hook | Floor: h0 row |
+| 1 · The problem | 0:20–1:00 | Why this matters | Landing page chapters |
+| 2 · Switch Console | 1:00–1:55 | How the floor is built on Switch | Console, then terminal |
+| 3 · Deterministic flow | 1:55–2:35 | Agents propose, code decides | Landing loop clock, gate.yaml, a refusal |
+| 4 · A real run | 2:35–3:45 | The loop working end to end | Slack `#deflate-control` threads |
+| 5 · The floor | 3:45–4:15 | What a research lead sees | Floor dashboard |
+| 6 · Close | 4:15–4:30 | The claim and the links | Landing hero |
+
+---
+
+## Act 0 · Cold open (0:00–0:20)
+
+**Screen:** the floor's strategies table, zoomed on the **h0 · reference audit** row: FAIL 6/15, DSR 0.017, net −₹38.1L.
+
+> "This is a strategy we actually traded. We ran it through Deflate. It failed six of six checks. Its Sharpe was luck, and the losses weren't." *(30 words)*
+
+Cut on the last word to the hero, "MOST BACKTESTS ARE LUCK."
+
+## Act 1 · The problem (0:20–1:00)
+
+**Screen:** landing page. Scroll slowly through the hero, then 01 Tangent trap, 03 Swarms make it worse (pause on the luck line rising) and 04 We tried it.
+
+> "I build quant algorithms for retail investors. Alpha decays in days now, so the pressure is to test more ideas, faster. Every extra backtest raises the best Sharpe you can get by pure luck. An AI swarm makes that worse: it tries hundreds of ideas an hour. My last swarm ran 987 trials. None of them survived honest testing. The fix isn't fewer ideas. It's a referee the agents can't argue with." *(77 words)*
+
+## Act 2 · Built on Switch Console (1:00–1:55)
+
+The point of this act: **Switch is the floor.** Show the setup in the order you'd build it.
+
+| Time | Screen | Say |
+|---|---|---|
+| 1:00–1:15 | Console → the template you created from `templates/control-room.v2.yaml`. Point at the `bridge`, `human` and agent-typed params. | "Everything starts as a Switch v2 template. One control room, on Slack, with its roles: proposers, a judge, a reader, a coder, a verifier, a validator." *(27)* |
+| 1:15–1:30 | Console → Your Agents: eight agents with their LED avatars, all live. | "The agents are Claude Code sessions created from one agent template, each with its own brief. Switch gives each one an identity, a role, and a way to be woken up." *(31)* |
+| 1:30–1:42 | Console → connectivity: the Slack bridge, connected (blur the name). | "Switch's Slack bridge is our only UI. We wrote no Slack bot." *(11)* |
+| 1:42–1:55 | Terminal: the orchestrator starting. It opens the event stream, pins `#deflate-control` and replays the backlog. Optionally flash `qs/switch/client.py` and its ops list. | "The referee is our own process, registered on Switch as an always-on agent. It listens to every message on Switch's event stream and acts only through Switch ops. Without Switch it hears nothing and can say nothing." *(37)* |
+
+## Act 3 · Deterministic flow (1:55–2:35)
+
+The point of this act: **LLMs talk, code decides.** Switch's templates provision rooms; they don't run workflows. The workflow is a state machine in the orchestrator, driven by Switch events.
+
+| Time | Screen | Say |
+|---|---|---|
+| 1:55–2:10 | Landing → the loop (stepped clock): propose → judge → freeze → verify → gate → patch or stop → sign-off → paper → retire → fork. | "The loop is a state machine. Agents can propose, critique and explain. They can't decide. Every transition is code reacting to a Switch message." *(25)* |
+| 2:10–2:22 | `config/gate.yaml` in the editor (CPCV, deflated Sharpe, PBO, null, costs), then a gate receipt showing the config sha. | "The gate is fifteen-plus checks from López de Prado's book. It's hashed and read-only to agents. Change a threshold and the next trial refuses to run." *(28)* |
+| 2:22–2:35 | Slack: the orchestrator refusing a patch that changes two rules: "freeze refused: a patch must change exactly one rule". | "Patches change exactly one rule. Four patches, then a hard stop. Only a named human can approve. None of that is a prompt; it's code." *(26)* |
+
+**Prep for 2:22:** produce a real refusal before recording. Copy `specs/h2v2.yaml` to `specs/h2v3.yaml` and change two rules, e.g. the entry filter and the exit. Then post `deflate freeze h2v3 specs/h2v3.yaml` in the h2 thread. The orchestrator replies `@coder h2 … freeze refused: a patch must change exactly one rule; h2v3 changes 2: […]`. Delete that spec afterwards. Don't use the old "7 fields" refusal; it came from a bug that's since fixed.
+
+## Act 4 · A real run (2:35–3:45)
+
+The point of this act: **the whole loop, for real, in one Slack channel.** Each hypothesis and paper is a thread.
+
+| Time | Screen | Say |
+|---|---|---|
+| 2:35–2:55 | The Bouchaud paper thread: `deflate implement https://arxiv.org/abs/2103.09692`, the parsed card with exact LaTeX equations, then the reader's brainstorm with memory hits. | "A researcher drops a paper. The orchestrator parses it, equations included, and opens a thread. The reader checks memory, what we tried and what died, then brainstorms with me before proposing anything." *(33)* |
+| 2:55–3:10 | Control: three proposer cards, the judge's pairwise JSON verdict, then the thread root `🧪 h2 · vix-gated-drift`. | "Proposers write cards; the judge compares them in pairs. The winner gets a thread: one Switch room per hypothesis, shown as a thread, so hundreds of strategies don't mean hundreds of channels." *(32)* |
+| 3:10–3:25 | In the h2 thread: the coder freezes `specs/h2.yaml` (sha), the verifier's `verified`, then the **FAIL 11/15** receipt. Hold on it. Then the validator's plain-English explanation. | "The coder freezes a spec. The verifier checks it matches the card. The gate runs once, and it fails: deflated Sharpe 0.43, overfitting probability 0.87. The validator explains it. It can't change it." *(34)* |
+| 3:25–3:45 | Same thread: `patch allowed (1/4)`, the coder freezes h2v2 (VIX above its 250-day median), and h2v2 also FAILs 9/16. If h2 reached its hard stop before recording, end on `hard stop · dead end` and the post-mortem request. | "One patch, one rule: only trade when volatility is above its yearly median. It's a new trial, so the bar goes up. Still a fail. The family's trial count never resets, even when it forks." *(37)* |
+
+Time-lapse the coder writing specs and the trial runs.
+
+## Act 5 · The research floor (3:45–4:15)
+
+**Screen:** the floor, live on :8766 (or the Pages snapshot). Pan the KPI band, the pipeline, then the strategies table with its luck line. Open the h2 drawer, then show the agents table ("9 of 9 live", read from Switch).
+
+> "This is what a research lead sees. Every trial is counted, failures included. The dashed line is the Sharpe that luck alone reaches at this many trials; nothing is above it yet. Agent status comes straight from Switch. And 987 old trials are shown, but not counted." *(48)*
+
+## Act 6 · Close (4:15–4:30)
+
+**Screen:** back to the landing hero, then the end card: the GitHub repo URL and the Pages URL.
+
+> "Agents propose. Code decides. Humans sign off. Switch is where all of it happens. Deflate: so the backtests you keep are the ones that weren't luck." *(26)*
+
+Total voiceover: about 560 words, which leaves room to breathe.
+
+---
+
+## Optional beat, if time allows (+0:25, after Act 4)
+
+The paper desk on a **rejected** strategy, labelled on every post: daily health, a decay alarm, then retirement. It shows the tail of the loop. Skip it if the cut is over 4:45.
 
 ```bash
-set -a; source .env; set +a          # QS_BRIDGE, QS_ENGINE_REF=feat/deflate, QS_THREADS=1
-uv run python -m qs.cli calibrate                                        # fills the calibration stat
-uv run python -m qs.cli run-orchestrator --humans "<Slack display name>" # real gate
-uv run python -m qs.web                # leaderboard, http://127.0.0.1:8765
-uv run python -m floor.server          # research floor, http://127.0.0.1:8766
-cd landing && npm run dev              # http://localhost:5173
-```
-
-- Switch Console local server is up; the agents from `templates/deflate-agents.v2.yaml` are online.
-- Slack is open on `#deflate-control`. Everything happens in this one channel: each hypothesis and each paper is a thread.
-- Use `deflate <cmd>` rather than `@orchestrator <cmd>`: Switch auto-replies "not permitted" to @-mentions of the orchestrator (it's registered with the bootstrap token). The orchestrator acts either way.
-- Dry-run the paper beat once so the reader's answers are fast.
-- Open tabs: landing, Slack `#deflate-control`, floor (:8766), leaderboard (:8765).
-- Long waits (coder writing a spec, trial runs, paper replay) are cut or sped up. Say so once on screen: "time-lapse".
-
-## Beats
-
-| # | Time | On screen | Type / do | Say |
-|---|---|---|---|---|
-| 1 | 0:00–0:25 | Landing page, hero to the problem section | — | "I build quant and ML algorithms for retail and HNI investors. Alpha decay went from months to days, and AI swarms make false discoveries cheaper: every extra backtest raises the best Sharpe you can get by luck. My last swarm produced 259 candidates and promoted zero. Deflate is the fix: agents propose, code decides, a human signs off. It runs entirely on Switch." |
-| 2 | 0:25–0:40 | Slack `#deflate-control` | `deflate implement https://arxiv.org/abs/2103.09692` | "A researcher drops a paper. The orchestrator is our own process, registered on Switch as an always-on agent. It opens a paper thread right under my message." |
-| 3 | 0:40–1:05 | The paper thread: the parsed card (title, abstract, exact LaTeX equations), then the reader's memory hits and what's testable | Reply, e.g. `Which parts can we actually test on NIFTY?` Then `@reader propose` | "Bouchaud's 'Radical Complexity' is a review, not a strategy, so the reader says what's testable. Rough volatility becomes a vol-forecast filter. Crowded trades only partly: we only have open interest. It checks memory first: what we tried, what died, and why. It proposes only when I ask." |
-| 4 | 1:05–1:20 | Control: `deflate propose {…}`, `registered card …`, then the judge's pairwise verdict | — | "Cards go to the orchestrator. Code checks them against the feature registry and the dead ends. Then the judge compares two cards; the winner gets a thread." |
-| 5 | 1:20–1:30 | The new thread `🧪 h1 · …` in `#deflate-control` | — | "One Switch room per hypothesis, shown as a thread in one Slack channel. Hundreds of strategies can't mean hundreds of channels; the family tree lives in the database." |
-| 6 | 1:30–1:45 | In the thread: the coder posts `deflate freeze h1 specs/h1.yaml`; the orchestrator replies `spec frozen … sha …` | — | "The coder writes a YAML spec. Freezing hashes it, and after the first trial it can never change. The engine, gate and config are checked against a committed ref before every trial, so an agent's edit has no effect." |
-| 7 | 1:45–1:55 | The verifier posts `verified h1 round 1: …` | — | "The verifier checks the spec matches the card. Then the trial runs once, and that trial is counted forever." |
-| 8 | 1:55–2:15 | `research trial FAIL` with the check grid; the validator explains it | — | "Real gate: fail. CPCV, deflated Sharpe with the family's trial count, PBO, an exposure-matched null. The validator explains the result; it can't change it." |
-| 9 | 2:15–2:30 | `patch allowed (1/4)` with monthly P&L; the coder freezes `h1v2`; another FAIL | (coder) `deflate freeze h1v2 specs/h1v2.yaml` | "One patch, exactly one rule changed, enforced by a structured diff. It's a new trial, so the bar goes up." |
-| 10 | 2:30–2:40 | `hard stop (…); dead end` and the post-mortem request | — | "Code stops it, not an agent. The post-mortem goes to memory." |
-| 11 | 2:40–2:55 | Control: fork; new thread `🧪 h1.1 · … · forked from h1` | `deflate fork h1 <slug>` | "What we learned forks a new hypothesis, with its lineage in the thread title. The fork inherits the family's trial count; forking never resets the bar." |
-| 12 | 2:55–3:10 | Floor dashboard (:8766): board by stage, lineage, a hypothesis drawer with its receipts | — | "The research floor: every hypothesis, every patch line, every receipt, live from the research database." (If the Switch live-state panel is in by recording, show it; it reads "Switch offline" when Switch is down.) |
-| 13 | 3:10–3:20 | h1.2.3's demo-gate FAIL receipt (from the 8-trial search) | — | "We searched eight counted trials for anything to show. The closest: gap continuation in calm regimes. Deflated Sharpe 0.44, PBO 0.65, 79% of its P&L from five days. Even the loose demo gate says no. That's the product working." |
-| 14 | 3:20–3:40 | Labelled walkthrough on h1.2.3: every post stamped `REJECTED BY GATE · pipeline demo, not a recommendation`; the daily health post; the decay alarm and retire posts | See below | "To show the rest of the pipeline, here's sign-off to paper to decay on that rejected strategy, labelled on every post. Same engine and spec on a replayed tick feed; CUSUM and entropy watch the P&L; two alarms and it retires." |
-| 15 | 3:40–4:00 | Leaderboard at `127.0.0.1:8765`: reference rows pinned, every FAIL counted, 987 prior trials "reported, not counted", calibration reject rates (100% on no-skill fixtures) | — | "Every trial is counted, failures included. The gate rejects every no-skill fixture. Deflate: agents propose, code decides, humans sign off, and Switch is where all of it happens." |
-
-## The labelled walkthrough (beat 14)
-
-```bash
-uv run python -m qs.paper.desk --hid h1.2.3 --spec specs/demo/h1.2.3.yaml --replay \
+uv run python -m qs.paper.desk --hid h2v2 --spec specs/h2v2.yaml --replay \
   --label "REJECTED BY GATE · pipeline demo, not a recommendation"
 ```
 
-- Add `--room "<control channel id>#<h1.2.3 thread root>"` to post in the hypothesis thread, as the desk does after a real approval.
-- h1.2.3 enters at 09:20 and the 2026-11-02 recording starts at 09:47, so the replay makes no trades. Show the daily health post.
-- For the decay alarm and retire posts, use the injected-losses run (`tests/test_desk.py::test_desk_retires_on_alarm`), labelled as a simulation.
-- Thresholds stay untouched. The search is in `research.demo-search.db` and `specs/demo/`.
+## Before recording (about 30 minutes)
+
+```bash
+set -a; source .env; set +a
+export QS_ENGINE_REF=feat/deflate QS_THREADS=1 UV_CACHE_DIR=$HOME/.cache/uv-qs
+uv run python -m qs.cli run-orchestrator --humans "Atharva Maskar,atharva.maskar,atharva,AtharvaMaskar"   # if it isn't already running
+uv run python -m floor.server                    # http://127.0.0.1:8766
+cd landing && npm run dev                        # or the Pages URL
+```
+
+1. **Console:** all eight agents show live. The Slack bridge shows connected.
+2. **Slack:** hide the sidebar. Open `#deflate-control` with the h2 thread and the Bouchaud thread ready.
+3. **The refusal for Act 3:** produce it now (see the prep note) so it already sits in the thread.
+4. **The floor:** refresh it, open the h2 drawer once to warm it up, and close it.
+5. **Browser:** a clean profile with no bookmarks bar, zoom at 110%, dark theme on both sites.
+6. **Tabs, in order:** floor (h0 row), landing, Console, terminal, editor (`config/gate.yaml`), Slack.
+
+## Recording order (not the same as the video order)
+
+Record by screen so you set each one up only once:
+1. Landing: Acts 1, 3a and 6.
+2. Console: Act 2.
+3. Editor and terminal: Acts 2d and 3b.
+4. Slack: Acts 3c and 4. Scroll the threads slowly, top to bottom.
+5. Floor: Acts 0 and 5.
+6. Voiceover: read the lines above in one take per act, then cut the picture to the voice.
 
 ## If something stalls
 
-- An agent is slow: cut. Never fake a post. Every message on screen must come from a real run.
-- The orchestrator didn't react: `deflate status` shows the state. Check the orchestrator's terminal for the parse error. A "not permitted" auto-reply to an `@orchestrator` mention is expected; it still acts.
-- uv complains the cache is locked: prefix with `UV_CACHE_DIR=/tmp/uv-cache`.
+- **An agent is slow:** cut. Never fake a post; every message on screen must come from a real run.
+- **The orchestrator doesn't react:** run `deflate status`. A "not permitted" auto-reply to `@orchestrator` is expected; use the `deflate` prefix.
+- **Running out of time:** drop the optional beat. Then shorten Act 4 to the h2 thread only (the FAIL receipt and the patch). The 3:30 cut is Acts 0–6 without 2:55–3:10 and without the editor shot in Act 3.
