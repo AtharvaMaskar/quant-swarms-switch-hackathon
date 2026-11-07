@@ -10,7 +10,7 @@ params:
   room:
     type: string
     description: Room name, lit- plus the paper id
-    pattern: "lit-[a-z0-9]+(-[a-z0-9]+)*"
+    pattern: "[a-z0-9]+(-[a-z0-9]+)*"
   round: {type: number, description: Loop round}
   url: {type: string, description: Canonical paper URL (arXiv abs page or SSRN abstract page)}
   repo_url: {type: string, default: "https://github.com/AtharvaMaskar/quant-swarms-switch-hackathon"}
