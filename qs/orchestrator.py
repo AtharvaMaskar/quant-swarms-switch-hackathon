@@ -31,13 +31,16 @@ params:
   hid: {type: string}
   room: {type: string}
   orchestrator: {type: agent, default: orchestrator}
+  bridge: {type: bridge, default: [Slack, $first], required: false}
+  human: {type: string, default: user}
 resources:
   paper:
     type: room
     name: "{room}"
     description: "Paper trading for {hid}: decay alerts and daily P&L."
+    bridge: "{bridge}"
     agents: ["{orchestrator}"]
-    users: ["{$creator}"]
+    users: ["{human}"]
 """
 
 Action = tuple[str, dict]

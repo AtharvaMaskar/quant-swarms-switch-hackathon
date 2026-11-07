@@ -53,6 +53,17 @@ def run_orchestrator(con, a) -> None:
 
     os.chdir(ROOT)   # spec paths in the DB (specs/<hid>.yaml) are repo-relative
     agent = SwitchAgent(os.environ["SWITCH_URL"], os.environ["SWITCH_AGENT_ID"], os.environ["SWITCH_API_KEY"])
+    # Switch refuses room ops (409) until this agent has a live event stream, so open it first and
+    # hand the orchestrator the already-open stream.
+    import queue, threading, time
+    q: queue.Queue = queue.Queue()
+    threading.Thread(target=lambda: [q.put(e) for e in agent.events()], daemon=True).start()
+    deadline = time.time() + 20
+    while agent.generation is None and time.time() < deadline:
+        time.sleep(0.2)
+    if agent.generation is None:
+        sys.exit("could not open the Switch event stream (is the server up and the agent key valid?)")
+    agent.events = lambda: iter(q.get, None)
     ctl = a.control_room or os.environ.get("QS_CONTROL_ROOM") or json.loads(
         (con.execute("SELECT value FROM meta WHERE key='control_room'").fetchone() or ["null"])[0])
     if not ctl:

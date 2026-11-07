@@ -142,7 +142,10 @@ def _arxiv(c, lit_id, url, out) -> Paper:
               authors=[" ".join(a.findtext("a:name", "", _ATOM).split()) for a in entry.findall("a:author", _ATOM)])
     out.mkdir(parents=True, exist_ok=True)
 
-    st, _, pdf = _get(c, f"https://arxiv.org/pdf/{aid}")
+    try:   # the pdf is a convenience: a slow or failed download must not lose the source parse
+        st, _, pdf = _get(c, f"https://arxiv.org/pdf/{aid}")
+    except (PaperError, httpx.HTTPError) as e:
+        st, pdf = f"failed ({e!r})", b""
     if st == 200 and pdf.startswith(b"%PDF"):
         (out / "paper.pdf").write_bytes(pdf)
         p.pdf_path = str(out / "paper.pdf")

@@ -2,6 +2,8 @@
 # Created once per run. {hid} is the next free hypothesis id, so the kickoff is unique per run.
 version: 2
 params:
+  bridge: {type: bridge, description: Messaging app for the room (Slack if set up, else the first e.g. Mattermost), default: [Slack, $first], required: false}
+  human: {type: string, default: user, description: Messaging-app username of the human risk owner}
   hid: {type: string, description: Next free hypothesis id (h13)}
   round: {type: number, default: 1, description: Loop round}
   room: {type: string, default: deflate-control, description: Room name}
@@ -17,7 +19,8 @@ resources:
     name: "{room}"
     description: "Deflate control: propose, judge, sign off. Leaderboard and round summaries land here."
     agents: ["{proposer_card}", "{proposer_lead}", "{proposer_contrarian}", "{judge}", "{orchestrator}"]
-    users: ["{$creator}"]
+    bridge: "{bridge}"
+    users: ["{human}"]
     instructions: |
       Proposers post cards with the propose command; the judge compares cards; the human
       approves or rejects. Our code decides everything else. Never edit qs/, config/ or ref/.
