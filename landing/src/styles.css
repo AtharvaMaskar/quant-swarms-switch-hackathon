@@ -715,3 +715,22 @@ html.has-cursor, html.has-cursor * { cursor: none !important; }
 .js .app.in .thread > :nth-child(8) { animation-delay: 1.76s; } .js .app.in .thread > :nth-child(9) { animation-delay: 1.9s; }
 .app-body { height: auto; min-height: 600px; }
 @media (max-width: 900px) { .app-title .chip { display: none; } .patches { margin-left: 0; } }
+
+/* Manifesto v2: no script. EXCELLENCE is the same face, lavender, with a marker that draws in. */
+.manifesto .dither-bg::after { content: ''; position: absolute; inset: 0; background: rgba(8, 10, 50, 0.3); }
+.manifesto-text span { color: rgba(255, 255, 255, 0.22); }
+.manifesto-text span.mark { position: relative; display: inline-block; }
+.manifesto-text span.mark::after { content: ''; position: absolute; left: 0; right: 0.35em; bottom: -0.02em; height: 0.11em; background: var(--lav); transform: scaleX(0); transform-origin: left; transition: transform 0.6s cubic-bezier(0.7, 0, 0.2, 1) 0.15s; }
+.manifesto-text span.mark.on { color: var(--lav); }
+.manifesto-text span.mark.on::after { transform: scaleX(1); }
+
+/* Acknowledgements: editorial pull-quote */
+.pull { margin: 64px 0 0; padding-top: 28px; border-top: 1px solid var(--ink); max-width: 1180px; }
+.pull blockquote { margin: 0; }
+.pq { font: 600 clamp(1.75rem, 3.4vw, 3.25rem)/1.12 var(--sans); letter-spacing: -0.02em; text-indent: -0.42em; }
+.pq2 { margin-top: 18px; font: 400 clamp(1.125rem, 1.6vw, 1.5rem)/1.35 var(--sans); color: #4A4945; max-width: 46ch; }
+.pull cite, .credits cite { font: 500 0.6875rem/1 var(--mono); font-style: normal; letter-spacing: 0.08em; color: #6E6C66; margin-left: 6px; }
+.pull figcaption { margin-top: 22px; font: 500 0.75rem/1.4 var(--mono); letter-spacing: 0.08em; color: #4A4945; }
+.pull figcaption a { color: var(--ink); text-underline-offset: 3px; }
+.credits q { display: block; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--rule); color: var(--ink); font-weight: 600; quotes: '“' '”'; }
+.credits ul { margin-top: 48px; }

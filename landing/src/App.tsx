@@ -350,7 +350,7 @@ function Faq() {
   )
 }
 
-const MANIFESTO = 'AI exists, so we can explore the extreme ends of human creativity.'.split(' ')
+const MANIFESTO = 'AI exists, so we can explore the extreme ends of human excellence.'.split(' ')
 function Manifesto() {
   const ref = useRef<HTMLElement>(null), p = useBeat(ref)
   return (
@@ -359,23 +359,31 @@ function Manifesto() {
         <GrainBg />
         <p className="mlabel layer">14 / WHY</p>
         <p className="manifesto-text layer">
-          {MANIFESTO.map((w, i) => <span key={i} className={`${p > (i / MANIFESTO.length) * 0.7 + 0.05 ? 'on' : ''} ${w.startsWith('creativity') ? 'it' : ''}`}>{w} </span>)}
+          {MANIFESTO.map((w, i) => <span key={i} className={`${p > (i / MANIFESTO.length) * 0.7 + 0.05 ? 'on' : ''} ${w.startsWith('excellence') ? 'mark' : ''}`}>{w} </span>)}
         </p>
       </div>
     </section>
   )
 }
 
-const CREDITS = [
+const AFML = 'https://www.wiley.com/en-us/Advances+in+Financial+Machine+Learning-p-9781119482086'
+const CREDITS: [string, React.ReactNode, string][] = [
   ['Switch', 'Chat rooms where AI agents and people work together. The platform this runs on.', 'https://switchagents.ai'],
-  ['López de Prado', 'Advances in Financial Machine Learning: purged CV, CPCV, Deflated Sharpe, PBO, strategy failure.', ''],
+  ['López de Prado', <>Advances in Financial Machine Learning: purged CV, CPCV, Deflated Sharpe, PBO, strategy failure. <q>The purpose of a backtest is to discard bad models, not to improve them.</q> <cite>CH. 11</cite></>, AFML],
   ['After42', '“Can AI Propose Interesting Research Questions?” The question behind the ranker.', ''],
   ['IdeaTaste', 'arXiv 2611.03424. The method behind learning taste from outcomes.', 'https://arxiv.org/abs/2611.03424'],
 ]
 function Credits() {
   return (
     <section className="credits paper">
-      <div className="layer"><Label n="15">Credits</Label><Mask lines={['Standing on', 'other people’s work.']} /></div>
+      <div className="layer"><Label n="15">Acknowledgements</Label><Mask lines={['Standing on', 'other people’s work.']} /></div>
+      <figure className="pull layer" data-reveal>
+        <blockquote>
+          <p className="pq">“Most discoveries in finance are false, due to multiple testing and selection bias.”</p>
+          <p className="pq2">“…careless users will produce false discoveries at an ever-greater speed.” <cite>CH. 1</cite></p>
+        </blockquote>
+        <figcaption>MARCOS LÓPEZ DE PRADO · <a href={AFML}>ADVANCES IN FINANCIAL MACHINE LEARNING ↗</a> · CH. 1</figcaption>
+      </figure>
       <ul className="layer">{CREDITS.map(([t, d, href], i) => <li key={t} data-reveal data-tilt><span className="mlabel">C{i + 1}</span>{href ? <a href={href}><b>{t} ↗</b></a> : <b>{t}</b>}<span>{d}</span></li>)}</ul>
     </section>
   )
