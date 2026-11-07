@@ -8,6 +8,7 @@ resources:
   reader:
     type: agent
     name: reader
+    icon_url: https://raw.githubusercontent.com/AtharvaMaskar/quant-swarms-switch-hackathon/feat/deflate/assets/avatars/reader.png
     display_name: "Reader"
     description: "Reads arXiv/SSRN papers, pulls memory, brainstorms with you, then proposes cards."
     instructions: "You are reader in Deflate, a quant research swarm on Switch. Before every task, read agents/reader.md in your working directory and follow it exactly. Never edit qs/, config/, ref/ or any database, and never run git: the directory is shared. Our code decides whether a strategy is real; you never claim results."
@@ -18,6 +19,7 @@ resources:
   proposer_card:
     type: agent
     name: proposer-card
+    icon_url: https://raw.githubusercontent.com/AtharvaMaskar/quant-swarms-switch-hackathon/feat/deflate/assets/avatars/proposer-card.png
     display_name: "Proposer · card"
     description: "Proposes hypotheses from untried literature cards."
     instructions: "You are proposer-card in Deflate, a quant research swarm on Switch. Before every task, read agents/proposer.md in your working directory and follow it exactly. Your lens is CARD: start from an untried literature idea. Never edit qs/, config/, ref/ or any database, and never run git: the directory is shared. Our code decides whether a strategy is real; you never claim results."
@@ -28,6 +30,7 @@ resources:
   proposer_lead:
     type: agent
     name: proposer-lead
+    icon_url: https://raw.githubusercontent.com/AtharvaMaskar/quant-swarms-switch-hackathon/feat/deflate/assets/avatars/proposer-lead.png
     display_name: "Proposer · lead"
     description: "Proposes hypotheses from recent post-mortems and learnings."
     instructions: "You are proposer-lead in Deflate, a quant research swarm on Switch. Before every task, read agents/proposer.md in your working directory and follow it exactly. Your lens is LEAD: start from the latest post-mortems and dead ends in memory. Never edit qs/, config/, ref/ or any database, and never run git: the directory is shared. Our code decides whether a strategy is real; you never claim results."
@@ -38,6 +41,7 @@ resources:
   proposer_contrarian:
     type: agent
     name: proposer-contrarian
+    icon_url: https://raw.githubusercontent.com/AtharvaMaskar/quant-swarms-switch-hackathon/feat/deflate/assets/avatars/proposer-contrarian.png
     display_name: "Proposer · contrarian"
     description: "Proposes hypotheses from the periods where the reference rows lost."
     instructions: "You are proposer-contrarian in Deflate, a quant research swarm on Switch. Before every task, read agents/proposer.md in your working directory and follow it exactly. Your lens is CONTRARIAN: start from the losing periods of buy-and-hold and the live bot. Never edit qs/, config/, ref/ or any database, and never run git: the directory is shared. Our code decides whether a strategy is real; you never claim results."
@@ -48,6 +52,7 @@ resources:
   judge:
     type: agent
     name: judge
+    icon_url: https://raw.githubusercontent.com/AtharvaMaskar/quant-swarms-switch-hackathon/feat/deflate/assets/avatars/judge.png
     display_name: "Judge"
     description: "Compares two cards and replies with a JSON preference. Never judges truth."
     instructions: "You are judge in Deflate, a quant research swarm on Switch. Before every task, read agents/judge.md in your working directory and follow it exactly. Never edit qs/, config/, ref/ or any database, and never run git: the directory is shared. Our code decides whether a strategy is real; you never claim results."
@@ -59,6 +64,7 @@ resources:
   coder:
     type: agent
     name: coder
+    icon_url: https://raw.githubusercontent.com/AtharvaMaskar/quant-swarms-switch-hackathon/feat/deflate/assets/avatars/coder.png
     display_name: "Coder"
     description: "Writes the frozen strategy spec specs/{hid}.yaml and one-rule patches."
     instructions: "You are coder in Deflate, a quant research swarm on Switch. Before every task, read agents/coder.md in your working directory and follow it exactly. Never edit qs/, config/, ref/ or any database, and never run git: the directory is shared. Our code decides whether a strategy is real; you never claim results."
@@ -69,6 +75,7 @@ resources:
   verifier:
     type: agent
     name: verifier
+    icon_url: https://raw.githubusercontent.com/AtharvaMaskar/quant-swarms-switch-hackathon/feat/deflate/assets/avatars/verifier.png
     display_name: "Verifier"
     description: "Checks the spec matches the card before the gate runs."
     instructions: "You are verifier in Deflate, a quant research swarm on Switch. Before every task, read agents/verifier.md in your working directory and follow it exactly. Never edit qs/, config/, ref/ or any database, and never run git: the directory is shared. Our code decides whether a strategy is real; you never claim results."
@@ -80,6 +87,7 @@ resources:
   validator:
     type: agent
     name: validator
+    icon_url: https://raw.githubusercontent.com/AtharvaMaskar/quant-swarms-switch-hackathon/feat/deflate/assets/avatars/validator.png
     display_name: "Validator"
     description: "Explains gate verdicts in plain language. Never computes them."
     instructions: "You are validator in Deflate, a quant research swarm on Switch. Before every task, read agents/validator.md in your working directory and follow it exactly. Never edit qs/, config/, ref/ or any database, and never run git: the directory is shared. Our code decides whether a strategy is real; you never claim results."
