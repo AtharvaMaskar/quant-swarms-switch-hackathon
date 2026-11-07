@@ -80,6 +80,7 @@ def test_floor_endpoints(tmp_path):
         assert s["kpis"]["prior_trials"] == 987 and s["kpis"]["pass_rate"] == 0.0 and s["refs"][0]["psr"] is None
         cards = {c["hid"]: c for c in s["cards"]}
         assert cards["h1"]["gate"]["failed"] == ["dsr", "pbo"] and cards["h1"]["gate"]["demo"]
+        assert cards["h1"]["gate"]["n_checks"] == 3 and cards["h1"]["gate"]["fails"][0]["k"] == "dsr"
         assert cards["h1"]["column"] == "ranked" and cards["h1"]["sub"] == "speccing"
         assert (cards["h2"]["column"], cards["h2"]["sub"]) == ("ranked", "judging")
         assert s["switch"]["ok"] and s["switch"]["live"] == 1 and s["switch"]["room"]["bridge"] == "Choice Slack"
@@ -133,6 +134,8 @@ def test_floor_trials_table(tmp_path):
         r = run["rows"][0]
         assert (r["hid"], r["slug"], r["lens"], r["window"], r["demo"], r["failed"], r["dsr"], r["sr"], r["net_inr"]) == \
                ("h1", "expiry-mom", "lead", "research", True, ["dsr", "pbo"], 0.2, 0.5, 8.0)
+        assert r["n_checks"] == 3 and r["fails"] == [{"k": "dsr", "v": 0.2, "thr": ">0.95"},
+                                                     {"k": "pbo", "v": 0.6, "thr": "<=0.1"}]
         old = json.loads(_get(base, "/api/trials?source=search")[1])
         assert old["source"] == "search" and [x["hid"] for x in old["rows"]] == ["h1.1", "h1"]
         assert old["rows"][0]["lineage"] == "h1.1 ← h1" and old["emax_sr"] > 0 and old["prior_trials"] == 987

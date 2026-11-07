@@ -83,6 +83,19 @@ def _meta(con) -> dict:
     return {k: _j(v, v) for k, v in con.execute("SELECT key, value FROM meta")}
 
 
+def _fails(checks_json, failed=None) -> tuple[list[dict], int]:
+    """Failed checks as [{k, v, thr}] (value against threshold) and the number of gating checks.
+    The verdict's `failed` list is the authority; "(flag)" checks are advisory and not counted, as in the summary."""
+    ch = _j(checks_json, {}) or {}
+    failed = _j(failed, None)
+    out = []
+    for k, c in ch.items():
+        if isinstance(c, dict) and (k in failed if failed is not None else not c.get("passed", True)):
+            v = c.get("value")
+            out.append({"k": k, "v": v.get("median_sr") if isinstance(v, dict) else v, "thr": c.get("threshold")})
+    return out, sum("flag" not in str((c or {}).get("threshold", "")) for c in ch.values())
+
+
 def _clean(x):
     """NaN/inf -> None so browsers can parse the JSON."""
     if isinstance(x, float):
@@ -190,8 +203,8 @@ def state(con, refs=None, sw=None) -> dict:
     meta = _meta(con)
     ranked, pending = meta.get("ranked") or [], meta.get("judge_pending") or []
     trials = con.execute('SELECT id, hyp_id, "window", demo, passed, started_at, json_extract(verdict, "$.failed"), '
-                         'json_extract(verdict, "$.metrics.sr"), json_extract(metrics, "$.dsr") '
-                         "FROM trials ORDER BY id").fetchall()
+                         'json_extract(verdict, "$.metrics.sr"), json_extract(metrics, "$.dsr"), '
+                         'json_extract(verdict, "$.checks") FROM trials ORDER BY id').fetchall()
     last_ts = dict(con.execute("SELECT hyp_id, max(ts) FROM messages WHERE hyp_id IS NOT NULL GROUP BY hyp_id"))
     signed = dict(con.execute('SELECT hyp_id, decision FROM signoffs ORDER BY rowid'))
     budget = _budget()
@@ -233,7 +246,8 @@ def state(con, refs=None, sw=None) -> dict:
             "lit_id": _source_lit(root_card), "forked_from": root_card.get("forked_from"),
             "patches": len(vs) - 1, "budget": budget, "trials": len(research),
             "gate": None if last is None else {"trial": last[0], "passed": bool(last[4]), "demo": bool(last[3]),
-                                               "failed": _j(last[6], []) or [], "sr": last[7], "dsr": last[8]},
+                                               "failed": _j(last[6], []) or [], "sr": last[7], "dsr": last[8],
+                                               "fails": _fails(last[9], last[6])[0], "n_checks": _fails(last[9], last[6])[1]},
             "holdout": None if not holdout else bool(holdout[-1][4]),
             "signoff": signed.get(hid), "since": since,
         })
@@ -407,12 +421,12 @@ def trials(con) -> dict:
             'json_extract(t.metrics, "$.pbo"), json_extract(t.metrics, "$.cpcv_median"), '
             'json_extract(t.verdict, "$.metrics.cpcv_pos"), json_extract(t.verdict, "$.metrics.net_inr"), '
             'json_extract(t.verdict, "$.metrics.n_bets"), json_extract(t.verdict, "$.checks.costs.value"), '
-            'json_extract(t.verdict, "$.metrics.sr"), json_extract(t.verdict, "$.summary") '
+            'json_extract(t.verdict, "$.metrics.sr"), json_extract(t.verdict, "$.summary"), json_extract(t.verdict, "$.checks") '
             "FROM trials t LEFT JOIN hypotheses h ON h.id = t.hyp_id ORDER BY t.id DESC").fetchall()
     except sqlite3.OperationalError:
         return {"rows": [], "n": 0, "passed": 0, "emax_sr": None}
     keys = ("id", "hid", "slug", "lens", "window", "demo", "passed", "when", "failed", "dsr", "psr", "pbo",
-            "cpcv_median", "cpcv_pos", "net_inr", "bets", "cost_ratio", "sr", "summary")
+            "cpcv_median", "cpcv_pos", "net_inr", "bets", "cost_ratio", "sr", "summary", "checks")
     out = []
     for r in rows:
         d = dict(zip(keys, r))
@@ -422,6 +436,7 @@ def trials(con) -> dict:
             if m:
                 d["net_frac"], d["psr"] = float(m[1]), float(m[2])
         d.pop("summary")
+        d["fails"], d["n_checks"] = _fails(d.pop("checks"), d["failed"])
         try:
             d["lineage"] = " ← ".join(reversed(db._lineage(d["hid"]).split(" → ")))
         except ValueError:
