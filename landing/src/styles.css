@@ -745,3 +745,10 @@ html.has-cursor, html.has-cursor * { cursor: none !important; }
 .manifesto-line .em { color: var(--lav); font-weight: 500; }
 .manifesto-after { margin-top: 44px; font: 500 0.8125rem/1 var(--mono); letter-spacing: 0.08em; color: #6E6E78; }
 @media (max-width: 900px) { .manifesto-line .ml { display: inline; } }
+
+/* Live product links */
+.nav-board { font: 500 0.75rem/1 var(--mono); text-transform: uppercase; letter-spacing: 0.08em; text-decoration: none; color: #fff; padding: 13px 12px; border: 1px solid rgba(201, 205, 251, 0.45); transition: background-color 0.2s, color 0.2s; }
+.nav-board:hover { background: #fff; color: var(--ink); }
+.board-cta { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; margin-top: 40px; }
+.board-cta .note { margin: 0; }
+@media (max-width: 900px) { .nav-board { display: none; } }

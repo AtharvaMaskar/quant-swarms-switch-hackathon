@@ -4,6 +4,8 @@ export const NAME = 'Deflate'
 export const HEADLINE = 'Most backtests are luck.'
 // Switch Gateway's default host port is 3000 (GATEWAY_HOST_PORT in Switch's .env.example).
 export const SWITCH_URL: string = import.meta.env.VITE_SWITCH_URL || 'http://localhost:3000'
+// The live leaderboard / research floor served by the swarm.
+export const FLOOR_URL: string = import.meta.env.VITE_FLOOR_URL || 'http://127.0.0.1:8766'
 export const GITHUB_URL = 'https://github.com/AtharvaMaskar2608/quant-swarms-switch-hackathon'
 
 export const STAGES = [

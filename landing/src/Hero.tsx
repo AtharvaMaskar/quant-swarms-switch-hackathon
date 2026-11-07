@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { NAME, HEADLINE, SWITCH_URL, GITHUB_URL } from './data.ts'
+import { NAME, HEADLINE, SWITCH_URL, FLOOR_URL } from './data.ts'
 import { useInView, useTyping } from './hooks.ts'
 import { expectedMaxSharpe } from './stats.ts'
 import { Assemble, Odometer } from './fx.tsx'
@@ -21,7 +21,8 @@ export function Nav() {
       <ul className="nav-links">
         {LINKS.map(([label, id]) => <li key={id}><a href={`#${id}`} className={active === id ? 'on' : ''}>{label}</a></li>)}
       </ul>
-      <a className="nav-cta" href={SWITCH_URL}>Open in Switch ↗</a>
+      <a className="nav-board" href={FLOOR_URL} target="_blank" rel="noopener">Board ↗</a>
+      <a className="nav-cta" href={SWITCH_URL} target="_blank" rel="noopener">Open in Switch ↗</a>
     </nav>
   )
 }
@@ -222,8 +223,8 @@ export function Hero() {
           <p className="pos" data-reveal>The research floor for agentic quant teams.</p>
           <p className="lead" data-reveal>{NAME} is a research swarm where agents propose, code decides, and humans sign off, running in Switch rooms. Self-hosted and open-source.</p>
           <div className="btns" data-reveal>
-            <a className="btn solid" href={SWITCH_URL}>Open in Switch ↗</a>
-            <a className="btn line" href={GITHUB_URL}>GitHub</a>
+            <a className="btn solid" href={SWITCH_URL} target="_blank" rel="noopener">Open in Switch ↗</a>
+            <a className="btn line" href={FLOOR_URL} target="_blank" rel="noopener">View the live board ↗</a>
           </div>
         </div>
         <div className="hero-right layer"><Board /></div>

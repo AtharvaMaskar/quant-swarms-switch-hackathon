@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { MeshGradient } from '@paper-design/shaders-react'
 import { start } from './engine.ts'
 import { expectedMaxSharpe } from './stats.ts'
-import { NAME, SWITCH_URL, GITHUB_URL, STAGES, CHECKS, gate, loopState, CANDIDATES, BOARD, FAQ } from './data.ts'
+import { NAME, SWITCH_URL, FLOOR_URL, GITHUB_URL, STAGES, CHECKS, gate, loopState, CANDIDATES, BOARD, FAQ } from './data.ts'
 import { useBeat, useInView, useReveal } from './hooks.ts'
 import { Hero, Nav, Ticker } from './Hero.tsx'
 import { BigMarquee, DitherBg, Odometer, startMotion, useFlip } from './fx.tsx'
@@ -124,7 +124,7 @@ function Solution() {
       <ol className="rows" data-reveal>
         {FLOOR.map(([t, d], i) => <li key={t} className={i === cur ? 'on' : i < cur ? 'done' : ''}><span className="rn tab">0{i + 1}</span><div><b>{t}</b><span>{d}</span></div></li>)}
       </ol>
-      <div className="btns" data-reveal><a className="btn solid" href={SWITCH_URL}>Open the research floor in Switch ↗</a></div>
+      <div className="btns" data-reveal><a className="btn solid" href={SWITCH_URL} target="_blank" rel="noopener">Open the research floor in Switch ↗</a></div>
     </Pin>
   )
 }
@@ -329,6 +329,10 @@ function Board() {
           </tbody>
         </table>
       </div>
+      <div className="board-cta layer" data-reveal>
+        <a className="btn solid" href={FLOOR_URL} target="_blank" rel="noopener">Open the live research floor ↗</a>
+        <p className="note">THE REAL BOARD: EVERY TRIAL COUNTED, LIVE FROM SWITCH</p>
+      </div>
     </section>
   )
 }
@@ -410,7 +414,7 @@ function Footer() {
       <div className="footer-inner layer">
         <div className="footer-right">
           <p>Built on Switch. With thanks to López de Prado (AFML), After42 and IdeaTaste.</p>
-          <p><a href={GITHUB_URL}>GitHub ↗</a> · <a href={SWITCH_URL}>Open in Switch ↗</a></p>
+          <p><a href={SWITCH_URL} target="_blank" rel="noopener">Open in Switch ↗</a> · <a href={FLOOR_URL} target="_blank" rel="noopener">Live board ↗</a> · <a href={GITHUB_URL} target="_blank" rel="noopener">GitHub ↗</a></p>
           <p className="fine">BSE PHOTO: NIYANTHA SHEKHAR, <a href="https://commons.wikimedia.org/w/index.php?curid=21583922">CC BY 2.0</a>. NOT INVESTMENT ADVICE; PAPER TRADING ONLY. © 2026</p>
         </div>
         <p className="giant" aria-hidden="true">{NAME}</p>
