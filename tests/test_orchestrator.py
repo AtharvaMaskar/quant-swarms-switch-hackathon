@@ -303,3 +303,28 @@ def test_channel_prefix(monkeypatch):
     from qs.orchestrator import _ch
     monkeypatch.setenv("QS_CHANNEL_PREFIX", "deflate-")
     assert _ch("h1-expiry-mom") == "deflate-h1-expiry-mom" and _ch("deflate-control") == "deflate-control"
+
+
+class ThreadAgent(FakeAgent):
+    def thread(self, room_id, content):
+        self.n += 1
+        self.calls.append(("thread", room_id, content))
+        return f"{room_id}#t{self.n}"
+
+
+def test_threads_mode_opens_no_channels(tmp_path):
+    """Slack: one channel; each hypothesis and each paper is a thread in it, never a new channel."""
+    from qs import db as _db
+    from qs.orchestrator import Orchestrator
+    con = _db.connect(str(tmp_path / "r.db"))
+    agent = ThreadAgent()
+    o = Orchestrator(con, agent, {"threads": True, "humans": ["Atharva Maskar"], "control_room": "CTL",
+                                  "build_cap": 2}, runner=StubRunner())
+    o._open_for_test = None
+    _db.add_hypothesis(con, "h1", "late-day-momentum", {"approach": "x", "slug": "late-day-momentum"})
+    o._open("h1")
+    assert not [c for c in agent.calls if c[0] == "create_room"]
+    (root,) = [c for c in agent.calls if c[0] == "thread"]
+    assert root[1] == "CTL" and "h1 · late-day-momentum" in root[2]
+    rid = con.execute("SELECT room_id FROM hypotheses WHERE id='h1'").fetchone()[0]
+    assert rid.startswith("CTL#") and ("mention", rid, root and agent.calls[-1][2]) == agent.calls[-1]

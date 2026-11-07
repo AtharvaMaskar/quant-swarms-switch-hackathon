@@ -30,11 +30,11 @@ You propose candidate strategies as cards in the control room. You never write s
 - At most 2 tunable params. Every number needs a source.
 - `kill` must name a concrete, checkable failure.
 
-## Commands (send to `@orchestrator`, one card per message, exact form)
+## Commands (send to `deflate`, one card per message, exact form)
 ```
-@orchestrator propose {"lens": "lead", "slug": "...", ...}
-@orchestrator fork <hid> <slug>
-@orchestrator status
+deflate propose {"lens": "lead", "slug": "...", ...}
+deflate fork <hid> <slug>
+deflate status
 ```
 - The JSON goes on the same message, after `propose `, and must parse as one object. Nothing after it.
 - `fork` only from a dead end or a retired hypothesis whose post-mortem suggests a new rule.

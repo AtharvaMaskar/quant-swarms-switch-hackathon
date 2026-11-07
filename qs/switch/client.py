@@ -80,14 +80,31 @@ class SwitchAgent:
             raise httpx.HTTPStatusError(f"{r.status_code} on {name}: {r.text[:2000]}", request=r.request, response=r)
         return r.json()["result"]
 
-    def post(self, room_id: str, content: str) -> dict:
-        """Plain message; needs no connection."""
+    def thread(self, room_id: str, content: str) -> str:
+        """Post a thread root in room_id; returns the virtual room id "<room_id>#<root event id>".
+        Every post/mention to that id lands in the thread (one Slack channel, a thread per hypothesis/paper)."""
+        if self._room != room_id:
+            self.op("connect_to_room", room_id=room_id, include_general_instructions=False)
+            self._room = room_id
+        return f"{room_id}#{self.op('post_message', body=content)['event_id']}"
+
+    def post(self, room_id: str, content: str, thread_id: str | None = None) -> dict:
+        """Plain message; needs no connection. With thread_id (or a "<room>#<thread>" id), replies in that thread."""
+        if "#" in room_id:
+            room_id, thread_id = room_id.split("#", 1)
+        if thread_id:
+            if self._room != room_id:
+                self.op("connect_to_room", room_id=room_id, include_general_instructions=False)
+                self._room = room_id
+            return self.op("post_message", body=content, thread_id=thread_id)
         r = self.http.post(f"/agents/{self.agent_id}/message", json={"room_id": room_id, "content": content})
         r.raise_for_status()
         return r.json()
 
     def mention(self, room_id: str, body: str, names=(), roles=(), thread_id: str | None = None) -> dict:
         """send_targeted_message acts on the connection's room, so claim it first."""
+        if "#" in room_id:
+            room_id, thread_id = room_id.split("#", 1)
         if self._room != room_id:
             self.op("connect_to_room", room_id=room_id, include_general_instructions=False)
             self._room = room_id
@@ -102,9 +119,12 @@ class SwitchAgent:
         return self.op("create_room_from_yaml", yaml=template_yaml, inputs=inputs)
 
     def link(self, child_room: str, parent_room: str, label: str) -> dict:
+        if "#" in child_room or "#" in parent_room:     # threads carry lineage in their root text instead
+            return {}
         return self.op("link_rooms", source_room_id=child_room, target_room_id=parent_room, label=label)
 
     def read_context(self, room_id: str, limit: int = 50) -> dict:
+        room_id = room_id.split("#", 1)[0]
         """{threads: [{root, replies}], ...}; entries carry `attachments` [{filename, mimetype, mxc, ...}]."""
         return self.op("read_context", room_id=room_id, limit=limit)
 
@@ -115,6 +135,8 @@ class SwitchAgent:
         return r.content
 
     def archive(self, room_id: str) -> dict:
+        if "#" in room_id:                                # a thread is never archived; the channel stays
+            return {}
         return self.op("archive_room", room_id=room_id)
 
     def _beat(self, interval: float, dead: threading.Event) -> None:
@@ -170,12 +192,12 @@ class SwitchAgent:
             time.sleep(1)
 
 
-_CMD = re.compile(r"@orchestrator\b[\s:,]*(\w+)\s*(.*)", re.S | re.I)
+_CMD = re.compile(r"(?:@orchestrator\b|^\s*deflate\b)[\s:,]*(\w+)\s*(.*)", re.S | re.I)
 # the verifier posts `verified <hid> round <n>: ...` as a plain room message (agents/verifier.md)
-_VERIFIED = re.compile(rf"^\s*(?:@orchestrator\b[\s:,]*)?verified\s+({HID})\s+round\s+(\d+)\b\s*:?\s*(.*)",
+_VERIFIED = re.compile(rf"^\s*(?:(?:@orchestrator|deflate)\b[\s:,]*)?verified\s+({HID})\s+round\s+(\d+)\b\s*:?\s*(.*)",
                        re.S | re.I)
 # the judge replies `@orchestrator <hid> round <n>: {"prefer": "A"|"B", "reason": ...}` (agents/judge.md)
-_JUDGED = re.compile(rf"@orchestrator\b[\s:,]*({HID})\s+round\s+(\d+)\s*:\s*(\{{.*\}})\s*$", re.S | re.I)
+_JUDGED = re.compile(rf"(?:@orchestrator\b|^\s*deflate\b)[\s:,]*({HID})\s+round\s+(\d+)\s*:\s*(\{{.*\}})\s*$", re.S | re.I)
 
 
 def parse_command(text: str) -> dict | None:
@@ -225,7 +247,7 @@ def parse_command(text: str) -> dict | None:
 
 _ASK = {
     # no "@orchestrator" here: the kickoff speaks as the orchestrator, and must not address itself
-    "coder": "write specs/{hid}.yaml from the card on branch hyp/{hid}, then send the orchestrator: freeze {hid} specs/{hid}.yaml",
+    "coder": "write specs/{hid}.yaml from the card (no git), then post: deflate freeze {hid} specs/{hid}.yaml",
     "verifier": "spec specs/{hid}.yaml is frozen; check it matches the card and report in this room.",
     "validator": "the gate report for {hid} is in; explain it in plain language. Do not restate a verdict the report does not give.",
     "proposer-card": "propose cards (next id {hid}) from an untried literature/library card.",

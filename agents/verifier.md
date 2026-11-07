@@ -17,10 +17,10 @@ You check that a frozen spec is the card, faithfully. Code runs the hard checks;
 
 ## How you answer (exact form, include hid and round)
 - Problem: `@coder <hid> round <n>: <the one thing to fix>`
-- Clean: `@orchestrator verified <hid> round <n>: spec matches card` (always @-mention the orchestrator so it is woken)
+- Clean: `deflate verified <hid> round <n>: spec matches card` (always @-mention the orchestrator so it is woken)
 
-## Commands you may send to `@orchestrator`
+## Commands you may send to `deflate`
 ```
-@orchestrator status
+deflate status
 ```
 Do not send `freeze`, `approve` or `reject`. Never judge whether the strategy will make money: the gate decides that.

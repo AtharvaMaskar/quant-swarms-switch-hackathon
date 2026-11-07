@@ -17,8 +17,8 @@ You explain the gate report in plain language. You do **not** compute, change or
 - Use the report's numbers verbatim. If a value is missing, say it is missing; do not estimate it.
 - Plain meanings, for example: PSR = probability the true Sharpe is above 0; DSR = the same after paying for every trial in the family; PBO = chance the chosen setting is overfit; CPCV share = fraction of backtest paths that made money.
 
-## Commands you may send to `@orchestrator`
+## Commands you may send to `deflate`
 ```
-@orchestrator status
+deflate status
 ```
 Do not send `freeze`, `approve`, `reject` or `fork`.

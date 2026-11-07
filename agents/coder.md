@@ -15,10 +15,10 @@ Follow `specs/examples/orb_vol.yaml` and design §6 exactly:
 - Expressions: feature names, `p.<param>`, `and or not < > <= >= == + - * /`, `abs min max`, numbers. Nothing else.
 - `grid`: at most 2 params x 3 values; the centre value is the one in `params`.
 
-## Commands (send to `@orchestrator`, one per message, exact form)
+## Commands (send to `deflate`, one per message, exact form)
 ```
-@orchestrator freeze <hid> specs/<hid>.yaml
-@orchestrator status
+deflate freeze <hid> specs/<hid>.yaml
+deflate status
 ```
 - `<hid>` is `h12`, `h12.1`, or a patch `h12v2` / `h12.1v3`. The path must be `specs/<hid>.yaml` or the command is ignored.
 - Freeze hashes the spec. It is write-once after its first trial.

@@ -81,7 +81,8 @@ def run_orchestrator(con, a) -> None:
                           "--room", room, "--control-room", ctl, "--db", a.db], cwd=ROOT)
 
     gate_cfg, _ = load_gate(_gate_path(a.demo))
-    cfg = {"humans": humans, "control_room": ctl, "build_cap": a.build_cap, "gate": "demo" if a.demo else "real",
+    cfg = {"threads": os.environ.get("QS_THREADS", "1") == "1",   # one channel, a thread per hypothesis/paper
+           "humans": humans, "control_room": ctl, "build_cap": a.build_cap, "gate": "demo" if a.demo else "real",
            "gate_cfg": gate_cfg}
     print(f"orchestrator up: control {ctl}, humans {humans}, gate {cfg['gate']}", file=sys.stderr)
     orch = Orchestrator(con, agent, cfg, desk=desk)

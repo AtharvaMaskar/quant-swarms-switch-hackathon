@@ -1,4 +1,4 @@
-# One room per paper (design §5a). Created by the orchestrator on `@orchestrator implement <url|id>`
+# One room per paper (design §5a). Created by the orchestrator on `deflate implement <url|id>`
 # and linked to control, on the messaging bridge, with the tagging human invited. The reader and the human brainstorm here with memory; cards proposed
 # from this room carry `source`, and their hypothesis rooms link back with "from paper".
 version: 2

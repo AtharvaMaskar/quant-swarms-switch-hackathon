@@ -12,13 +12,17 @@ params:
   proposer_lead: {type: agent, default: proposer-lead}
   proposer_contrarian: {type: agent, default: proposer-contrarian}
   judge: {type: agent, default: judge}
+  reader: {type: agent, default: reader}
+  coder: {type: agent, default: coder}
+  verifier: {type: agent, default: verifier}
+  validator: {type: agent, default: validator}
   orchestrator: {type: agent, default: orchestrator}
 resources:
   control:
     type: room
     name: "{room}"
     description: "Deflate control: propose, judge, sign off. Leaderboard and round summaries land here."
-    agents: ["{proposer_card}", "{proposer_lead}", "{proposer_contrarian}", "{judge}", "{orchestrator}"]
+    agents: ["{proposer_card}", "{proposer_lead}", "{proposer_contrarian}", "{judge}", "{reader}", "{coder}", "{verifier}", "{validator}", "{orchestrator}"]
     bridge: "{bridge}"
     users:
       - if: "{human}"

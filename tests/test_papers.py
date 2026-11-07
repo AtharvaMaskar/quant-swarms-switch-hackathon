@@ -214,7 +214,7 @@ def test_blocked_then_attach(tmp_path, monkeypatch):
     monkeypatch.setattr(papers, "fetch", lambda ref, out_root="papers", client=None: blocked)
     o = orch(tmp_path, AttachAgent())
     a = o.handle(msg("@orchestrator implement ssrn:4567890", HUMAN))
-    assert "`@orchestrator attach ssrn-4567890`" in bodies(a)[-1] and not [b for b in bodies(a) if "@reader" in b]
+    assert "`deflate attach ssrn-4567890`" in bodies(a)[-1] and not [b for b in bodies(a) if "@reader" in b]
     a = o.handle(msg("@orchestrator attach ssrn-4567890", HUMAN, room="room-1"))
     bs = bodies(a)
     assert "paper parsed (pdf)" in bs[0] and "approximate" in bs[0] and bs[-1].startswith("@reader ssrn-4567890 round 1")

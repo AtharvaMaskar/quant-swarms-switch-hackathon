@@ -18,10 +18,10 @@ Two cards, `A` and `B` (same schema as `agents/proposer.md`), plus the 5 nearest
 {"prefer": "A", "reason": "one or two sentences citing the criteria"}
 ```
 - `prefer` is `"A"` or `"B"`. No ties: pick one.
-- Reply in the thread you were asked in, addressed to `@orchestrator`, with the hid and round before the JSON:
-  `@orchestrator <hid> round <n>: {"prefer": "B", "reason": "..."}`
+- Reply in the thread you were asked in, addressed to `deflate`, with the hid and round before the JSON:
+  `deflate <hid> round <n>: {"prefer": "B", "reason": "..."}`
 
 ## Rules
 - Don't rewrite the cards. Don't add criteria. Don't use expected P&L as a reason.
 - Never edit `qs/`, `config/`, `ref/`, `specs/`, `data/` or `research.db`.
-- You may send `@orchestrator status`. You may not send `propose`, `freeze`, `approve`, `reject` or `fork`.
+- You may send `deflate status`. You may not send `propose`, `freeze`, `approve`, `reject` or `fork`.

@@ -96,6 +96,9 @@ class Orchestrator:
         return getattr(self.agent, op)(**kw)
 
     def _post(self, room, content):
+        room_t, tid = getattr(self, "_thread", (None, None))
+        if tid and room == room_t:                  # answer in the thread of the command we're handling
+            return self._do("post", room_id=room, content=content, thread_id=tid)
         return self._do("post", room_id=room, content=content)
 
     def _ask(self, room, name, body):
@@ -106,6 +109,7 @@ class Orchestrator:
         """Apply one Switch envelope; returns the Switch actions taken, in order."""
         self._acts = []
         p = msg.get("payload") or {}
+        self._thread = (msg.get("room_id"), p.get("thread_id") or p.get("message_id"))
         sender, name = p.get("sender"), p.get("sender_name") or ""
         if sender == getattr(self.agent, "agent_id", None) or name == self.cfg.get("name", "orchestrator"):
             return []                               # our own kickoffs and posts
@@ -212,10 +216,18 @@ class Orchestrator:
         h, r = self._hyp(hid), self.round
         self._set(f"round:{hid}", r)
         card = json.loads(h["card"])
-        res = self._do("create_room", template_yaml=HYP_TEMPLATE.read_text(),
-                       inputs={"hid": hid, "room": _ch(ids.room_name(hid, h["slug"])), "slug": h["slug"], "round": r,
-                               "spec_doc": json.dumps(card, indent=2)})
-        rid = res["room_id"]
+        if self.cfg.get("threads"):
+            lineage = f" · forked from {ids.parent(hid)}" if h["kind"] == "fork" else ""
+            src = (card.get("source") or {}).get("url")
+            rid = self._do("thread", room_id=self.ctl,
+                           content=f"🧪 {hid} · {h['slug']}{lineage}{f' · from paper {src}' if src else ''}\n"
+                                   f"Research thread for {hid}: spec, verify, gate, patches and sign-off all happen here.")
+            self._ask(rid, "coder", kickoff_text(hid, r, "coder"))
+        else:
+            res = self._do("create_room", template_yaml=HYP_TEMPLATE.read_text(),
+                           inputs={"hid": hid, "room": _ch(ids.room_name(hid, h["slug"])), "slug": h["slug"],
+                                   "round": r, "spec_doc": json.dumps(card, indent=2)})
+            rid = res["room_id"]
         self.con.execute("UPDATE hypotheses SET room_id=? WHERE id=?", (rid, hid))
         if h["kind"] == "fork":
             par = ids.parent(hid)
@@ -224,8 +236,10 @@ class Orchestrator:
         if (pid := memory.paper_id(src.get("url") or f"{src.get('type')}:{src.get('id')}")) \
                 and (lit := self._meta(f"lit:{pid[0]}")):
             self._do("link", child_room=rid, parent_room=lit, label="from paper")
-        db.log(self.con, "decision", f"opened room {_ch(ids.room_name(hid, h['slug']))}", room_id=rid, hyp_id=hid)
-        self._post(self.ctl, f"{hid} round {r}: room {_ch(ids.room_name(hid, h['slug']))} opened")
+        where = "thread" if self.cfg.get("threads") else f"room {_ch(ids.room_name(hid, h['slug']))}"
+        db.log(self.con, "decision", f"opened {where}", room_id=rid, hyp_id=hid)
+        if not self.cfg.get("threads"):
+            self._post(self.ctl, f"{hid} round {r}: room {_ch(ids.room_name(hid, h['slug']))} opened")
 
     def _on_fork(self, c, room, name):
         par, r = c["hid"], self.round
@@ -357,7 +371,10 @@ class Orchestrator:
         db.log(self.con, "signoff", f"approved by {name}", room_id=room, author=name, hyp_id=hid)
         db.set_status(self.con, hid, "signed")
         pname = _ch("paper-" + hid.lower().replace(".", "-"))
-        prid = self._do("create_room", template_yaml=PAPER_YAML, inputs={"hid": hid, "room": pname})["room_id"]
+        if self.cfg.get("threads"):
+            prid = h["room_id"]                     # the paper desk reports in the hypothesis's own thread
+        else:
+            prid = self._do("create_room", template_yaml=PAPER_YAML, inputs={"hid": hid, "room": pname})["room_id"]
         self._do("link", child_room=prid, parent_room=h["room_id"], label=f"paper desk for {hid}")
         self._post(prid, f"{hid} round {r}: approved by {name}; paper desk {'starting' if self.desk else 'not wired'}")
         if self.desk:
@@ -424,13 +441,20 @@ class Orchestrator:
             if self._meta(f"litpaper:{lit_id}"):
                 return
         else:
-            rid = self._do("create_room", template_yaml=LIT_TEMPLATE.read_text(),
-                           inputs={"lit_id": lit_id, "room": _ch(f"lit-{lit_id}"), "round": r, "url": url})["room_id"]
+            room_t, tid = getattr(self, "_thread", (None, None))
+            if self.cfg.get("threads"):
+                rid = f"{room_t}#{tid}" if room_t and tid else self._do(
+                    "thread", room_id=self.ctl, content=f"📄 {lit_id} · {url}\nPaper thread: read, brainstorm, propose.")
+            else:
+                rid = self._do("create_room", template_yaml=LIT_TEMPLATE.read_text(),
+                               inputs={"lit_id": lit_id, "room": _ch(f"lit-{lit_id}"), "round": r,
+                                       "url": url})["room_id"]
             self._set(f"lit:{lit_id}", rid)
             self._do("link", child_room=rid, parent_room=self.ctl, label=f"paper {lit_id}")
             db.log(self.con, "reference", json.dumps({"lit_id": lit_id, "url": url, "ref": c["ref"], "by": name}),
                    room_id=rid, author=name)
-            self._post(room, f"{lit_id} round {r}: lit room lit-{lit_id} opened for {name}")
+            self._post(room, f"{lit_id} round {r}: " + ("paper thread opened" if self.cfg.get("threads")
+                                                         else f"lit room lit-{lit_id} opened") + f" for {name}")
         try:
             p = papers.fetch(c["ref"], out_root=self.root / "papers")
         except Exception as e:   # network, parse or not-found: the human can still attach the PDF
@@ -443,12 +467,12 @@ class Orchestrator:
         n = self._meta(f"litask:{lit_id}", 0) + 1          # keeps repeated requests distinct
         self._set(f"litask:{lit_id}", n)
         self._post(rid, f"{lit_id} round {r}: could not read the paper ({why}; request #{n}). Please attach the "
-                        f"PDF in this room, then send `@orchestrator attach {lit_id}`.")
+                        f"PDF in this room, then send `deflate attach {lit_id}`.")
 
     def _on_attach(self, c, room, name):
         lit_id, r = c["lit_id"], self.round
         if not (rid := self._meta(f"lit:{lit_id}")):
-            return self._post(room, f"{lit_id} round {r}: no lit room yet; send `@orchestrator implement <url|id>` first")
+            return self._post(room, f"{lit_id} round {r}: no lit room yet; send `deflate implement <url|id>` first")
         ctx = self._do("read_context", room_id=rid, limit=50) or {}
         files = [(e.get("timestamp") or 0, a) for t in ctx.get("threads", []) for e in [t.get("root") or {}, *t.get("replies", [])]
                  for a in e.get("attachments") or []
