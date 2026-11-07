@@ -19,7 +19,7 @@ params:
     description: Messaging app the room is created on (Slack when set up, else the server's first, e.g. Mattermost)
     default: [Slack, $first]
     required: false
-  human: {type: string, default: user, description: Messaging-app username of the human}
+  human: {type: string, default: "", required: false, description: "Messaging-app username to invite (optional; people can also join the public channel)"}
   reader: {type: agent, default: reader}
   orchestrator: {type: agent, default: orchestrator}
 resources:
@@ -30,7 +30,10 @@ resources:
     bridge: "{bridge}"
     agents: ["{reader}", "{orchestrator}"]
     # the human joins on the messaging app; a server with no bridge has nobody to invite
-    users: ["{human}"]
+    users:
+      - if: "{human}"
+        value: ["{human}"]
+      - value: []
     instructions: |
       Paper {lit_id} ({url}). The reader writes the paper card, runs the memory queries, and
       brainstorms with the human in short turns. Cards are proposed only when the human says

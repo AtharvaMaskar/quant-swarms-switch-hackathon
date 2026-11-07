@@ -33,7 +33,7 @@ params:
   room: {type: string}
   orchestrator: {type: agent, default: orchestrator}
   bridge: {type: bridge, default: [Slack, $first], required: false}
-  human: {type: string, default: user}
+  human: {type: string, default: "", required: false, description: "Messaging-app username to invite (optional; people can also join the public channel)"}
 resources:
   paper:
     type: room
@@ -41,7 +41,10 @@ resources:
     description: "Paper trading for {hid}: decay alerts and daily P&L."
     bridge: "{bridge}"
     agents: ["{orchestrator}"]
-    users: ["{human}"]
+    users:
+      - if: "{human}"
+        value: ["{human}"]
+      - value: []
 """
 
 def _ch(name: str) -> str:

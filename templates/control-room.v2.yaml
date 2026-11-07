@@ -3,7 +3,7 @@
 version: 2
 params:
   bridge: {type: bridge, description: "Messaging app for the room: Slack if set up, otherwise the first one (Mattermost here)", default: [Slack, $first], required: false}
-  human: {type: string, default: user, description: Messaging-app username of the human risk owner}
+  human: {type: string, default: "", required: false, description: "Messaging-app username to invite (optional; people can also join the public channel)"}
   hid: {type: string, description: Next free hypothesis id (h13)}
   round: {type: number, default: 1, description: Loop round}
   room: {type: string, default: deflate-control, description: Room name}
@@ -20,7 +20,10 @@ resources:
     description: "Deflate control: propose, judge, sign off. Leaderboard and round summaries land here."
     agents: ["{proposer_card}", "{proposer_lead}", "{proposer_contrarian}", "{judge}", "{orchestrator}"]
     bridge: "{bridge}"
-    users: ["{human}"]
+    users:
+      - if: "{human}"
+        value: ["{human}"]
+      - value: []
     instructions: |
       Proposers post cards with the propose command; the judge compares cards; the human
       approves or rejects. Our code decides everything else. Never edit qs/, config/ or ref/.
