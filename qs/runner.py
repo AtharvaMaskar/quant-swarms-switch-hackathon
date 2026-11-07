@@ -69,10 +69,46 @@ def engine_sha(root=data.ROOT) -> str:
 
 
 # ---- patches ---------------------------------------------------------------------------------
+_RULE_ROOTS = ("entry", "exit", "sizing", "session", "instrument")
+
+
+def changed_rules(parent: Spec, child: Spec) -> list[str]:
+    """The decision rules a patch changes. A feature, param or grid entry that only serves a changed rule
+    is part of that rule ("go long when VIX > its own 250d median" is one rule even though it adds a
+    feature and a param); one that serves no changed rule counts as its own change."""
+    diff = spec_diff(parent, child)
+    rules = {".".join(p.split(".")[:2]) for p in diff if p.split(".")[0] in _RULE_ROOTS}
+
+    def text(spec, rule):           # the expression / value a rule is written in
+        node = spec.raw
+        for k in rule.split("."):
+            node = node.get(k, {}) if isinstance(node, dict) else {}
+        return json.dumps(node)
+
+    def users(spec, token):         # rules (transitively through features) that mention token
+        hit = {r for r in rules if re.search(rf"\b{re.escape(token)}\b", text(spec, r))}
+        for fname, fargs in (spec.raw.get("features") or {}).items():
+            if fname != token and re.search(rf"\b{re.escape(token)}\b", json.dumps(fargs)):
+                hit |= users(spec, fname)
+        return hit
+
+    extra = set()
+    for p in diff:
+        root, *rest = p.split(".")
+        if root in _RULE_ROOTS or not rest:
+            continue
+        name = rest[0]
+        token = name if root == "features" else f"p.{name}"
+        if not (users(parent, token) | users(child, token)):
+            extra.add(f"{root}.{name}")
+    return sorted(rules | extra)
+
+
 def check_patch(parent: Spec, child: Spec) -> None:
-    d = spec_diff(parent, child)
-    if len(d) != 1:
-        raise PatchError(f"a patch must change exactly one rule; {child.id} changes {len(d)}: {d}")
+    ch = changed_rules(parent, child)
+    if len(ch) != 1:
+        raise PatchError(f"a patch must change exactly one rule; {child.id} changes {len(ch)}: {ch} "
+                         f"(fields: {spec_diff(parent, child)})")
 
 
 # ---- helpers over the trials table -------------------------------------------------------------

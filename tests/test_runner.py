@@ -221,3 +221,25 @@ def test_refs_omit_missing_live_bot(monkeypatch, tmp_path, caplog):
     with caplog.at_level(logging.WARNING):
         out = refs.all_refs(BARS)
     assert set(out) == {"buy_hold"} and "live_bot" in caplog.text
+
+
+def test_patch_counts_rules_not_fields(tmp_path):
+    """Swapping a fixed VIX threshold for VIX above its own trailing quantile is ONE rule change,
+    even though it adds a feature and changes a param and its grid; touching an exit as well is two."""
+    import yaml
+    from qs.spec import load_spec
+    from qs.runner import changed_rules, check_patch, PatchError
+    base = yaml.safe_load(open("specs/h2.yaml"))
+    p = tmp_path / "h2.yaml"; p.write_text(yaml.safe_dump(base))
+    child = yaml.safe_load(yaml.safe_dump(base)); child["id"] = "h2v2"
+    child["features"]["vq"] = {"fn": "quantile", "feature": "v", "q": 0.5, "days": 250}
+    child["entry"]["long"] = child["entry"]["long"].replace("v > p.vthr", "v > vq * p.vthr")
+    child["params"]["vthr"] = 1.0
+    child["grid"]["vthr"] = [0.9, 1.0, 1.1]
+    c = tmp_path / "h2v2.yaml"; c.write_text(yaml.safe_dump(child))
+    assert changed_rules(load_spec(p), load_spec(c)) == ["entry.long"]
+    check_patch(load_spec(p), load_spec(c))
+    child["exit"]["stop_atr"] = 40
+    c.write_text(yaml.safe_dump(child))
+    with pytest.raises(PatchError):
+        check_patch(load_spec(p), load_spec(c))
