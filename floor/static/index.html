@@ -453,7 +453,7 @@ const TCOLS = [
   ['lens', 'Lens', (r) => r.lens ? esc(r.lens) : dash, '', '', 92, 'c-lens'],
   ['window', 'Window', (r) => `<span class="chip out">${esc(r.window)}</span>`, '', '', 86, 'c-window'],
   ['demo', 'Gate', (r) => r.demo ? '<span class="demo" style="margin:0">DEMO</span>' : '<span class="mute">real</span>', '', '', 60],
-  ['passed', 'Verdict', (r) => `<span class="vrd">${r.passed ? '<span class="chip pass">PASS</span>' : '<span class="chip fail">FAIL</span>'}${r.n_checks ? `<span class="mono">${r.fails.length} / ${r.n_checks}</span>` : ''}</span>`, '', 'failed checks / checks run; hover the row for which', 104],
+  ['passed', 'Verdict', (r) => `<span class="vrd">${r.passed ? '<span class="chip pass">PASS</span>' : '<span class="chip fail">FAIL</span>'}${r.n_checks ? `<span class="mono">${r.fails.length} / ${r.n_checks}</span>` : ''}</span>`, '', 'failed checks / checks run; hover the row for which', 118],
   ['dsr', 'DSR', (r) => r.dsr == null ? dash : `<span style="color:${r.dsr >= .95 ? 'var(--green)' : 'var(--ink-2)'}">${f(r.dsr, 3)}</span>`, 'n', EXPLAIN.dsr, 62],
   ['psr', 'PSR(0)', (r) => f(r.psr, 3), 'n', EXPLAIN.psr, 66], ['pbo', 'PBO', (r) => f(r.pbo, 2), 'n', EXPLAIN.pbo, 52],
   ['cpcv_median', 'CPCV med', (r) => f(r.cpcv_median), 'n', EXPLAIN.cpcv, 84], ['cpcv_pos', 'Paths +', (r) => pct(r.cpcv_pos), 'n', 'share of CPCV paths with positive P&L', 70],
