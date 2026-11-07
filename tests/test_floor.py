@@ -113,6 +113,41 @@ def test_floor_endpoints(tmp_path):
         srv.shutdown()
 
 
+def test_floor_trials_table(tmp_path):
+    path = _db(tmp_path)
+    search = str(tmp_path / "search.db")
+    con = db.connect(search)
+    db.add_hypothesis(con, "h1", "gap-and-go", {"slug": "gap-and-go"})
+    db.add_hypothesis(con, "h1.1", "gap-fade", {"slug": "gap-fade"})
+    daily = pd.Series([0.001, -0.001, 0.002], index=pd.date_range("2023-01-02", periods=3, freq="B"))
+    for hid, sr in (("h1", 0.4), ("h1.1", 0.9)):
+        db.record_trial(con, hid, "research", {}, "s", "e", "g", True, daily, {"dsr": 0.3},
+                        {"failed": ["dsr"], "metrics": {"sr": sr, "net_inr": 5.0}}, False)
+    con.close()
+    srv = server.serve(path, 0, search_db=search)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    base = f"http://127.0.0.1:{srv.server_address[1]}"
+    try:
+        run = json.loads(_get(base, "/api/trials?source=run")[1])
+        assert run["available"] and run["n"] == 1 and run["passed"] == 0 and run["emax_sr"] is None
+        r = run["rows"][0]
+        assert (r["hid"], r["slug"], r["lens"], r["window"], r["demo"], r["failed"], r["dsr"], r["sr"], r["net_inr"]) == \
+               ("h1", "expiry-mom", "lead", "research", True, ["dsr", "pbo"], 0.2, 0.5, 8.0)
+        old = json.loads(_get(base, "/api/trials?source=search")[1])
+        assert old["source"] == "search" and [x["hid"] for x in old["rows"]] == ["h1.1", "h1"]
+        assert old["rows"][0]["lineage"] == "h1.1 ← h1" and old["emax_sr"] > 0 and old["prior_trials"] == 987
+        d = json.loads(_get(base, "/api/hyp/h1.1?source=search")[1])
+        assert d["trials"][0]["hyp_id"] == "h1.1" and d["thread"] == {"state": "none"}
+    finally:
+        srv.shutdown()
+    srv = server.serve(path, 0, search_db=str(tmp_path / "missing.db"))
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    try:
+        assert json.loads(_get(f"http://127.0.0.1:{srv.server_address[1]}", "/api/trials?source=search")[1])["available"] is False
+    finally:
+        srv.shutdown()
+
+
 def test_floor_switch_offline_and_empty_db(tmp_path):
     path = _db(tmp_path)
     con = server.ro(path)
@@ -125,6 +160,7 @@ def test_floor_switch_offline_and_empty_db(tmp_path):
     db.connect(empty).close()
     con = server.ro(empty)
     s = server.state(con)
+    assert server.trials(con)["rows"] == []
     assert s["empty"] and s["cards"] == [] and s["kpis"]["emax_sr"] is None and s["switch"] == {"ok": None}
     con.close()
     assert SwitchLive({}).snapshot(CTL)["configured"] is False

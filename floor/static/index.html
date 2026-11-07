@@ -85,6 +85,19 @@ h3 { margin: 0 0 8px; font-size: 13px; font-weight: 600; }
 .pbar i.on { background: var(--amber); }
 .demo { font: 600 9.5px/1 var(--mono); letter-spacing: .04em; color: var(--amber); border: 1px solid var(--amber); border-radius: 3px; padding: 2px 4px; margin-left: auto; }
 .empty-col { font-size: 11.5px; color: var(--faint); padding: 2px 4px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.seg button { border: 0; background: var(--panel); padding: 4px 10px; font-size: 12px; cursor: pointer; color: var(--mute); }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button.on { background: var(--accent-bg); color: var(--accent); }
+.seg button:disabled { opacity: .45; cursor: not-allowed; }
+.strip { display: flex; gap: 24px; align-items: center; flex-wrap: wrap; padding: 12px 16px; border-bottom: 1px solid var(--line-2); }
+.strip .big { font-size: 20px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.tt { max-height: 520px; overflow: auto; }
+.tt table { min-width: 1180px; }
+.tt th { position: sticky; top: 0; background: var(--panel); cursor: pointer; user-select: none; z-index: 1; }
+.tt th.on { color: var(--ink); } .tt td { white-space: nowrap; font-size: 12.5px; }
+.tt tbody tr { cursor: pointer; } .tt tbody tr:hover td { background: var(--sunk); }
+.tt .fc { display: none; gap: 3px; margin-left: 6px; } .tt tr:hover .fc { display: inline-flex; }
 .grid2 { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 20px; align-items: start; }
 table { width: 100%; border-collapse: collapse; }
 th { text-align: left; font-weight: 500; font-size: 12px; color: var(--mute); padding: 6px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
@@ -158,6 +171,11 @@ details[open] > summary::before { transform: rotate(90deg); }
   <section class="panel" aria-label="Pipeline">
     <div class="ph"><h2>Pipeline</h2><span class="sub">one card per patch line; click a card for its receipts</span><span class="sp"></span><span class="sub" id="boardsub"></span></div>
     <div id="board"></div>
+  </section>
+  <section class="panel" aria-label="Strategies tested">
+    <div class="ph"><h2>Strategies tested</h2><span class="sub">every trial, newest first; click a row for its gate receipt</span><span class="sp"></span>
+      <div class="seg" role="group" aria-label="Source"><button type="button" data-src="run" class="on">This run</button><button type="button" data-src="search">Earlier search</button></div></div>
+    <div id="trials"></div>
   </section>
   <div class="grid2">
     <section class="panel" aria-label="Agent teams at work">
@@ -237,7 +255,7 @@ const EXPLAIN = {
 
 let S = null, D = null, sse = null, pollT = null;
 const calm = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
-const ui = { sel: null, paper: null, trial: null, feedHyp: store.get('floor.feedHyp') || '', day: null, seen: null };
+const ui = { src: 'run', sortKey: 'id', sortDir: -1, dsrc: 'run', focus: null, sel: null, paper: null, trial: null, feedHyp: store.get('floor.feedHyp') || '', day: null, seen: null };
 
 // ---------- theme ----------
 const THEMES = ['system', 'light', 'dark'];
@@ -397,6 +415,54 @@ function teams() {
 <td class="mute" style="white-space:nowrap">${esc(a.connector || '')}</td><td class="mute" style="font-size:12px">${esc(a.about || '')}</td></tr>`).join('')}</tbody></table>
 ${roles.length ? `<div class="pb note" style="border-top:1px solid var(--line-2)">Roles in the room: ${roles.map((r) => `<span title="${esc(r.about || '')}"><b style="color:var(--ink-2);font-weight:500">${esc(r.name)}</b>${r.exclusive ? ' (exclusive)' : ''}: ${r.held_by.length ? esc(r.held_by.join(', ')) : 'unheld'}</span>`).join(' · ')}</div>` : ''}`;
 }
+// ---------- strategies tested ----------
+let T = null;
+const TCOLS = [
+  ['hid', 'Strategy', (r) => `<span class="mono" style="font-weight:500">${esc(r.hid)}</span>${r.lineage.includes('←') ? ` <span class="mono faint" style="font-size:11px">${esc(r.lineage.slice(r.lineage.indexOf('←')))}</span>` : ''}`],
+  ['slug', 'Slug', (r) => esc(r.slug || '—')], ['lens', 'Lens', (r) => r.lens ? esc(r.lens) : dash],
+  ['window', 'Window', (r) => `<span class="chip out">${esc(r.window)}</span>`],
+  ['demo', 'Gate', (r) => r.demo ? '<span class="demo" style="margin:0">DEMO</span>' : '<span class="mute">real</span>'],
+  ['passed', 'Verdict', (r) => `${r.passed ? '<span class="chip pass">PASS</span>' : '<span class="chip fail">FAIL</span>'}${r.failed.length ? ` <span class="mono mute" style="font-size:11px">${r.failed.length} failed</span><span class="fc">${r.failed.map((x) => `<span class="chip m out" title="${esc(EXPLAIN[x] || '')}">${esc(x)}</span>`).join('')}</span>` : ''}`],
+  ['dsr', 'DSR', (r) => r.dsr == null ? dash : `<span style="color:${r.dsr >= .95 ? 'var(--green)' : 'var(--ink-2)'}">${f(r.dsr, 3)}</span>`, 'n', EXPLAIN.dsr],
+  ['psr', 'PSR(0)', (r) => f(r.psr, 3), 'n', EXPLAIN.psr], ['pbo', 'PBO', (r) => f(r.pbo, 2), 'n', EXPLAIN.pbo],
+  ['cpcv_median', 'CPCV med SR', (r) => f(r.cpcv_median), 'n', EXPLAIN.cpcv], ['cpcv_pos', '% paths +', (r) => pct(r.cpcv_pos), 'n'],
+  ['net_inr', 'Net ₹', (r) => r.net_inr != null ? `<span style="color:${r.net_inr >= 0 ? 'var(--green)' : 'var(--red)'}">${inr(r.net_inr)}</span>` : r.net_frac != null ? sg(r.net_frac * 100) + '% cap' : dash, 'n'],
+  ['bets', 'Bets', (r) => r.bets ?? dash, 'n'], ['cost_ratio', 'Ret. on costs', (r) => r.cost_ratio == null ? dash : f(r.cost_ratio, 2) + '×', 'n', EXPLAIN.costs],
+  ['when', 'When', (r) => `<span class="mono mute">${hm(r.when)}</span>`, 'n'],
+];
+async function loadTrials() {
+  try { const src = ui.src; const r = await (await fetch('/api/trials?source=' + src)).json(); if (src === ui.src) { T = r; trialsView(); } }
+  catch (e) { $('trials').innerHTML = `<div class="pb note">Could not load trials: ${esc(e.message)}</div>`; }
+}
+document.querySelectorAll('.seg button[data-src]').forEach((b) => (b.onclick = () => { ui.src = b.dataset.src; document.querySelectorAll('.seg button[data-src]').forEach((x) => x.classList.toggle('on', x === b)); loadTrials(); }));
+function scatter(rows, emax) {
+  const R = rows.filter((r) => r.window === 'research' && r.sr != null).sort((a, b) => a.id - b.id); if (!R.length) return '';
+  const W = 420, H = 96, L = 34, Rt = 8, Tp = 8, B = 16, ys = R.map((r) => r.sr).concat([0, emax ?? 0]);
+  const lo = Math.min(...ys) - .15, hi = Math.max(...ys) + .15, X = (i) => L + (R.length === 1 ? .5 : i / (R.length - 1)) * (W - L - Rt), Y = (v) => Tp + (hi - v) / (hi - lo) * (H - Tp - B);
+  return `<svg width="${W}" height="${H}" role="img" aria-label="Sharpe of each trial against the luck line">
+<line x1="${L}" x2="${W - Rt}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--line)"/><text x="${L - 5}" y="${Y(0) + 3}" text-anchor="end">0</text>
+${emax != null ? `<line x1="${L}" x2="${W - Rt}" y1="${Y(emax)}" y2="${Y(emax)}" stroke="var(--mute)" stroke-dasharray="4 3"/><text x="${L - 5}" y="${Y(emax) + 3}" text-anchor="end">${f(emax, 1)}</text><text x="${W - Rt}" y="${Y(emax) - 4}" text-anchor="end">luck alone, E[max SR] at N=${R.length}</text>` : ''}
+${R.map((r, i) => `<g><title>${esc(r.hid)} · SR ${f(r.sr)} · DSR ${f(r.dsr, 3)}${r.dsr >= .95 ? ' · confident' : ''}</title>${r.dsr >= .95 ? `<circle cx="${X(i)}" cy="${Y(r.sr)}" r="7.5" fill="none" stroke="var(--green)" stroke-width="1.5"/>` : ''}
+<circle cx="${X(i)}" cy="${Y(r.sr)}" r="3.5" fill="${r.passed ? 'var(--green)' : 'var(--red)'}" opacity=".85"/></g>`).join('')}
+<text x="${L}" y="${H - 3}">first trial</text><text x="${W - Rt}" y="${H - 3}" text-anchor="end">latest</text></svg>`;
+}
+function trialsView() {
+  const t = T; if (!t) return;
+  document.querySelector('.seg button[data-src="search"]').title = 'research.demo-search.db: the earlier honest search (read-only)';
+  if (!t.available) { $('trials').innerHTML = `<div class="pb note">${t.source === 'search' ? 'No earlier search database (research.demo-search.db) next to this DB.' : 'No database yet.'}</div>`; return; }
+  const prior = `<div class="note" title="${esc(t.prior_note || '')}">+ ${esc(t.prior_trials ?? 987)} trials from the prior project: reported, not counted</div>`;
+  if (!t.rows.length) { $('trials').innerHTML = `<div class="emptystate"><h3>No strategy has reached the gate yet</h3><div>The first one appears when the verifier signs off a frozen spec.</div><div style="margin-top:8px">${prior}</div></div>`; return; }
+  const k = ui.sortKey, dir = ui.sortDir;
+  const rows = [...t.rows].sort((a, b) => { const x = a[k], y = b[k]; if (x == null && y == null) return 0; if (x == null) return 1; if (y == null) return -1; return (x > y ? 1 : x < y ? -1 : 0) * dir; });
+  const conf = t.rows.filter((r) => r.dsr >= .95).length;
+  $('trials').innerHTML = `<div class="strip"><div><div class="big">${t.n} strateg${t.n === 1 ? 'y' : 'ies'} tested · ${t.passed} passed</div>
+<div class="note">${t.research} research${t.n - t.research ? ` + ${t.n - t.research} holdout` : ''} · ${conf} above the confident line (DSR ≥ 0.95)</div>${prior}</div>
+<div title="Each dot is a research trial's annualised Sharpe (green PASS, red FAIL); a ring marks DSR ≥ 0.95. The dashed line is the best Sharpe luck alone would produce after this many trials.">${scatter(t.rows, t.emax_sr)}</div></div>
+<div class="tt"><table><thead><tr>${TCOLS.map(([key, label, , al, tip]) => `<th class="${al || ''} ${key === k ? 'on' : ''}" data-k="${key}" title="${esc(tip || 'sort')}">${label}${key === k ? (dir > 0 ? ' ↑' : ' ↓') : ''}</th>`).join('')}</tr></thead>
+<tbody>${rows.map((r) => `<tr data-hid="${esc(r.hid)}" data-t="${r.id}">${TCOLS.map(([, , fn, al]) => `<td class="${al || ''}">${fn(r)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+  $('trials').querySelectorAll('th[data-k]').forEach((th) => (th.onclick = () => { ui.sortDir = ui.sortKey === th.dataset.k ? -ui.sortDir : -1; ui.sortKey = th.dataset.k; trialsView(); }));
+  $('trials').querySelectorAll('tbody tr').forEach((tr) => (tr.onclick = () => openDrawer(tr.dataset.hid, { src: t.source, trial: +tr.dataset.t })));
+}
 function render() { switchState(); kpis(); board(); teams(); lineage(); papers(); feed(); refs(); }
 
 // ---------- live connection ----------
@@ -404,7 +470,8 @@ function setLive(on, txt) { $('live').className = 'live' + (on ? ' on' : ''); $(
 let firstState = true;
 function onState(s) { S = s; if (firstState) { firstState = false; const h = decodeURIComponent(location.hash.slice(1));
   if (h.startsWith('paper:')) { ui.paper = h.slice(6); showDrawer(); } else if (h) { ui.sel = h; showDrawer(); } } setLive(true, 'live · ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })); render();
-  if (ui.sel) loadDrawer(ui.sel, true); else if (ui.paper) loadPaper(ui.paper, true); }
+  if (ui.src === 'run') loadTrials();
+  if (ui.sel && ui.dsrc === 'run') loadDrawer(ui.sel, true); else if (ui.paper) loadPaper(ui.paper, true); }
 function connect() {
   if (!window.EventSource) return poll();
   sse = new EventSource('/api/stream');
@@ -444,15 +511,20 @@ function threadHtml(t, what) {
 function logHtml(ms, hid) {
   return `<section class="panel"><div class="pb"><details><summary>Orchestrator log <span class="mute" style="font-weight:400">${ms.length} entries from research.db</span></summary><div style="margin-top:8px">${ms.length ? ms.map((m) => `<div class="msg"><div class="h"><span class="mono">${hm(m.ts)}</span><span class="chip">${esc(m.kind)}</span><b>${esc(m.author || '')}</b>${m.hyp_id && m.hyp_id !== hid ? `<span class="mono">${esc(m.hyp_id)}</span>` : ''}</div><div class="body">${esc(m.body)}</div></div>`).join('') : '<div class="note">No entries.</div>'}</div></details></div></section>`;
 }
-function openDrawer(hid) { ui.paper = null; ui.sel = hid; history.replaceState(null, '', '#' + hid); ui.trial = null; ui.day = null; $('drawer').classList.add('on'); $('scrim').classList.add('on'); $('drawer').setAttribute('aria-hidden', 'false');
+function openDrawer(hid, opt = {}) { ui.paper = null; ui.sel = hid; ui.dsrc = opt.src || 'run'; ui.focus = opt.trial || null;
+  history.replaceState(null, '', ui.dsrc === 'run' ? '#' + hid : location.pathname); ui.trial = null; ui.day = null; $('drawer').classList.add('on'); $('scrim').classList.add('on'); $('drawer').setAttribute('aria-hidden', 'false');
   $('dh').innerHTML = `<span class="hid">${esc(hid)}</span><span class="mute">loading…</span>`; $('db').innerHTML = ''; loadDrawer(hid); if (S) { board(); lineage(); } }
 function closeDrawer() { ui.sel = null; ui.paper = null; D = null; history.replaceState(null, '', location.pathname); $('drawer').classList.remove('on'); $('scrim').classList.remove('on'); $('drawer').setAttribute('aria-hidden', 'true'); if (S) { board(); lineage(); } }
 $('scrim').onclick = closeDrawer;
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && (ui.sel || ui.paper)) closeDrawer(); });
 async function loadDrawer(hid, keep) {
-  try { const r = await fetch('/api/hyp/' + encodeURIComponent(hid)); if (ui.sel !== hid) return;
+  try { const r = await fetch('/api/hyp/' + encodeURIComponent(hid) + '?source=' + ui.dsrc); if (ui.sel !== hid) return;
     if (!r.ok) { $('db').innerHTML = `<div class="note">No hypothesis ${esc(hid)}.</div>`; return; }
-    const top = $('db').scrollTop; D = await r.json(); drawer(); if (keep) $('db').scrollTop = top;
+    const top = $('db').scrollTop; D = await r.json();
+    if (ui.focus && D.trials.some((t) => t.id === ui.focus && t.window === 'research')) ui.trial = ui.focus;
+    drawer(); if (keep) $('db').scrollTop = top;
+    if (ui.focus) { const el = document.getElementById('rcpt-' + ui.focus); ui.focus = null;
+      if (el) { el.scrollIntoView({ block: 'start' }); el.style.outline = '1.5px solid var(--accent)'; el.style.outlineOffset = '6px'; el.style.borderRadius = '4px'; } }
   } catch (e) { $('db').innerHTML = `<div class="note">Could not load ${esc(hid)}: ${esc(e.message)}</div>`; }
 }
 
@@ -464,7 +536,7 @@ function drawer() {
   const sel = research.find((t) => t.id === ui.trial) || research[research.length - 1];
   if (sel) ui.trial = sel.id;
   const patches = D.line.length - 1;
-  $('dh').innerHTML = `<span class="hid">${esc(h.id)}</span><span class="slug">${esc(h.slug || '')}</span>${stChip(h.status)}
+  $('dh').innerHTML = `<span class="hid">${esc(h.id)}</span><span class="slug">${esc(h.slug || '')}</span>${stChip(h.status)}${ui.dsrc === 'search' ? '<span class="chip amber" title="research.demo-search.db, read-only">earlier search</span>' : ''}
 <span class="mute" style="font-size:12px">${esc(D.line.join(' → '))}${h.parent && h.kind === 'fork' ? ` · forked from ${esc(h.parent)}` : ''}</span>
 <span class="chip ${patches ? 'amber' : 'out'}" title="Patches used against the budget; each patch changes exactly one rule">patch ${patches}/${D.budget}</span>
 ${D.hard_stop ? `<span class="chip fail" title="Hard stop reason">hard stop: ${esc(D.hard_stop)}</span>` : ''}
@@ -610,7 +682,7 @@ ${idx.map((i, n) => `<div style="display:flex;gap:10px;font-size:12px"><span cla
 }
 function receipt(t) {
   const v = t.verdict || {}, ch = v.checks || {};
-  return `<div><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px"><span class="mono" style="font-weight:500">trial #${t.id}</span><span class="mono mute">${esc(t.hyp_id)}</span>
+  return `<div id="rcpt-${t.id}"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px"><span class="mono" style="font-weight:500">trial #${t.id}</span><span class="mono mute">${esc(t.hyp_id)}</span>
 <span class="chip out">${esc(t.window)}</span><span class="chip ${t.passed ? 'pass' : 'fail'}">${t.passed ? 'PASS' : 'FAIL'}</span>${t.demo ? '<span class="demo" style="margin:0">DEMO GATE</span>' : ''}
 <span class="mono faint" style="font-size:11px">${esc(t.gate)} gate ${esc((t.gate_sha || '').slice(0, 8))} · ${hm(t.started_at)}</span>
 ${Object.keys(t.params || {}).length ? `<span class="mono mute" style="font-size:11px">${esc(Object.entries(t.params).map(([k, x]) => k + '=' + JSON.stringify(x)).join(' '))}</span>` : ''}</div>

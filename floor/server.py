@@ -4,6 +4,7 @@ GET /                    the page (floor/static/index.html)
 GET /api/state           KPIs, board cards (one per patch line), lineage nodes, papers, refs, calibration, recent feed
 GET /api/hyp/<hid>       drawer: card, frozen spec, every trial of the patch line (receipt, checks, daily), sign-off,
                          paper desk, messages
+GET /api/trials          ?source=run|search  every trial, newest first, with the luck line (search = research.demo-search.db)
 GET /api/messages        ?hyp=<hid>&limit=N  newest first
 GET /api/paper/<lit_id>  a paper thread: paper.json summary, hypotheses it produced, the Slack thread from Switch
 GET /api/switch          live Switch view of the control room: bridge, agents live/idle, roles, rooms
@@ -30,7 +31,7 @@ from urllib.parse import parse_qs, quote, urlsplit
 import numpy as np
 import pandas as pd
 
-from qs import ids, memory
+from qs import db, ids, memory
 from qs.gate import stats as gstats
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -397,6 +398,43 @@ def hypothesis(con, hid, sw=None) -> dict | None:
             "messages": sorted({m["id"]: m for x in line for m in messages(con, x, limit=500)}.values(), key=lambda m: m["id"])}
 
 
+def trials(con) -> dict:
+    """One row per trial (the "strategies tested" table) plus the luck-alone E[max SR] at the current count."""
+    try:
+        rows = con.execute(
+            'SELECT t.id, t.hyp_id, h.slug, json_extract(h.card, "$.lens"), t."window", t.demo, t.passed, t.started_at, '
+            'json_extract(t.verdict, "$.failed"), json_extract(t.metrics, "$.dsr"), json_extract(t.metrics, "$.psr"), '
+            'json_extract(t.metrics, "$.pbo"), json_extract(t.metrics, "$.cpcv_median"), '
+            'json_extract(t.verdict, "$.metrics.cpcv_pos"), json_extract(t.verdict, "$.metrics.net_inr"), '
+            'json_extract(t.verdict, "$.metrics.n_bets"), json_extract(t.verdict, "$.checks.costs.value"), '
+            'json_extract(t.verdict, "$.metrics.sr"), json_extract(t.verdict, "$.summary") '
+            "FROM trials t LEFT JOIN hypotheses h ON h.id = t.hyp_id ORDER BY t.id DESC").fetchall()
+    except sqlite3.OperationalError:
+        return {"rows": [], "n": 0, "passed": 0, "emax_sr": None}
+    keys = ("id", "hid", "slug", "lens", "window", "demo", "passed", "when", "failed", "dsr", "psr", "pbo",
+            "cpcv_median", "cpcv_pos", "net_inr", "bets", "cost_ratio", "sr", "summary")
+    out = []
+    for r in rows:
+        d = dict(zip(keys, r))
+        d["demo"], d["passed"], d["failed"] = bool(d["demo"]), bool(d["passed"]), _j(d["failed"], []) or []
+        if d["window"] == "holdout" and d["summary"]:     # holdout verdicts carry net/PSR only in the summary
+            m = re.search(r"net ([+-][\d.]+) of capital, PSR\(0\) ([\d.]+)", d["summary"])
+            if m:
+                d["net_frac"], d["psr"] = float(m[1]), float(m[2])
+        d.pop("summary")
+        try:
+            d["lineage"] = " ← ".join(reversed(db._lineage(d["hid"]).split(" → ")))
+        except ValueError:
+            d["lineage"] = d["hid"]
+        out.append(d)
+    research = [d for d in out if d["window"] == "research"]
+    srs = np.array([d["sr"] for d in research if d["sr"] is not None], float)
+    meta = _meta(con)
+    return {"rows": out, "n": len(out), "research": len(research), "passed": sum(d["passed"] for d in research),
+            "emax_sr": gstats.expected_max_sr(len(research), float(srs.var(ddof=1))) if len(srs) > 1 else None,
+            "prior_trials": meta.get("prior_trials_reported"), "prior_note": meta.get("prior_trials_note")}
+
+
 def fingerprint(con) -> str:
     try:
         r = con.execute("SELECT (SELECT max(id) FROM messages), (SELECT count(*) FROM trials), "
@@ -420,7 +458,9 @@ def _sw_digest(sw, con) -> str:
     return repr((ag, th))
 
 
-def make_handler(db_path: str, refs: list[dict], sw=None):
+def make_handler(db_path: str, refs: list[dict], sw=None, search_path: str | None = None):
+    search_path = search_path or str(Path(db_path).with_name("research.demo-search.db"))
+
     class H(BaseHTTPRequestHandler):
         def _send(self, code, body: bytes, ctype):
             self.send_response(code)
@@ -433,8 +473,9 @@ def make_handler(db_path: str, refs: list[dict], sw=None):
         def _json(self, obj, code=200):
             self._send(code, json.dumps(_clean(obj), default=str).encode(), "application/json")
 
-        def _con(self):
-            return ro(db_path) if os.path.exists(db_path) else None
+        def _con(self, source=None):
+            path = search_path if source == "search" else db_path
+            return ro(path) if os.path.exists(path) else None
 
         def do_GET(self):
             u = urlsplit(self.path)
@@ -443,8 +484,14 @@ def make_handler(db_path: str, refs: list[dict], sw=None):
                 return self._send(200, PAGE.read_bytes(), "text/html; charset=utf-8")
             if u.path == "/api/stream":
                 return self._stream()
-            con = self._con()
+            src = "search" if q.get("source") == "search" else "run"
+            con = self._con(src)
+            sw_ = sw if src == "run" else None            # Switch threads belong to this run only
             try:
+                if u.path == "/api/trials":
+                    if not con:
+                        return self._json({"source": src, "available": False, "rows": [], "n": 0})
+                    return self._json({"source": src, "available": True, **trials(con)})
                 if u.path == "/api/state":
                     return self._json(state(con, refs, sw) if con else {**EMPTY, "refs": refs, "no_db": db_path})
                 if u.path == "/api/switch":
@@ -453,7 +500,7 @@ def make_handler(db_path: str, refs: list[dict], sw=None):
                 if u.path == "/api/messages":
                     return self._json(messages(con, q.get("hyp"), min(int(q.get("limit", 200)), 2000)) if con else [])
                 if u.path.startswith("/api/hyp/"):
-                    d = hypothesis(con, u.path.rsplit("/", 1)[1], sw) if con else None
+                    d = hypothesis(con, u.path.rsplit("/", 1)[1], sw_) if con else None
                     return self._json(d) if d else self._json({"error": "not found"}, 404)
                 if u.path.startswith("/api/paper/"):
                     d = paper(con, u.path.rsplit("/", 1)[1], sw) if con else None
@@ -501,8 +548,10 @@ def make_handler(db_path: str, refs: list[dict], sw=None):
     return H
 
 
-def serve(db_path: str, port: int = 8766, refs: list[dict] | None = None, switch=None) -> ThreadingHTTPServer:
-    srv = ThreadingHTTPServer(("127.0.0.1", port), make_handler(os.path.abspath(db_path), refs or [], switch))
+def serve(db_path: str, port: int = 8766, refs: list[dict] | None = None, switch=None,
+          search_db: str | None = None) -> ThreadingHTTPServer:
+    srv = ThreadingHTTPServer(("127.0.0.1", port), make_handler(os.path.abspath(db_path), refs or [], switch,
+                                                                search_db and os.path.abspath(search_db)))
     srv.daemon_threads = True
     return srv
 
@@ -514,6 +563,8 @@ def main(argv=None) -> None:
     ap.add_argument("--no-refs", action="store_true", help="skip the buy-and-hold / live-bot reference rows")
     ap.add_argument("--env", default=str(ROOT / ".env"), help="where SWITCH_URL / SWITCH_AGENT_ID / SWITCH_API_KEY live")
     ap.add_argument("--no-switch", action="store_true", help="run from research.db alone")
+    ap.add_argument("--search-db", default=None, help="earlier search shown by the Strategies toggle "
+                                                     "(default: research.demo-search.db next to --db)")
     a = ap.parse_args(argv)
     refs = []
     if not a.no_refs:
@@ -523,7 +574,7 @@ def main(argv=None) -> None:
     if not a.no_switch:
         from floor.switch_live import SwitchLive
         sw = SwitchLive.from_env_file(a.env).start()
-    srv = serve(a.db, a.port, refs, sw)
+    srv = serve(a.db, a.port, refs, sw, a.search_db)
     print(f"research floor on http://127.0.0.1:{a.port}  (db {a.db}, read-only; switch "
           f"{'off' if sw is None else 'configured' if sw.configured else 'not configured'})", flush=True)
     srv.serve_forever()
