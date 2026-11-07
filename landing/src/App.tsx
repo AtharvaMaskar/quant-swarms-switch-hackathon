@@ -271,7 +271,7 @@ function Costs() {
         <Mask lines={['Costs,', 'dated.']} />
         <p className="body" data-reveal>A backtest without STT is a story. Every trade pays brokerage, securities transaction tax, exchange and SEBI fees, stamp duty and GST, plus slippage. They live in one dated file the gate reads, so a rate change is a one-line edit with a date on it.</p>
         <figure className="photo" data-reveal>
-          <img src="/img/bse-front.jpg" width={1600} height={1339} loading="lazy" alt="The BSE building in Mumbai with its red sign, framed by palm trees." />
+          <img src={import.meta.env.BASE_URL + "img/bse-front.jpg"} width={1600} height={1339} loading="lazy" alt="The BSE building in Mumbai with its red sign, framed by palm trees." />
           <figcaption>BSE, DALAL STREET · PHOTO NIYANTHA SHEKHAR · CC BY 2.0</figcaption>
         </figure>
       </div>

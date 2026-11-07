@@ -550,10 +550,15 @@ function trialsView() {
 function render() { switchState(); kpis(); board(); teams(); lineage(); papers(); feed(); refs(); }
 
 // ---------- live connection ----------
+// Static snapshot (GitHub Pages): map /api/... to the JSON files scripts/snapshot_floor.py wrote.
+const SNAP = window.FLOOR_SNAPSHOT || null;
+if (SNAP) { const f0 = window.fetch.bind(window); window.EventSource = undefined;
+  window.fetch = (u) => { const x = new URL(u, location.href), s = x.searchParams.get('source') || 'run', p = x.pathname.split('/api/')[1];
+    return f0(p == null ? u : p === 'state' ? 'api/state.json' : p === 'trials' ? `api/trials.${s}.json` : p.startsWith('hyp/') ? `api/${p}.${s}.json` : `api/${p}.json`); }; }
 function setLive(on, txt) { $('live').className = 'live' + (on ? ' on' : ''); $('live').lastElementChild.textContent = txt; }
 let firstState = true;
 function onState(s) { S = s; if (firstState) { firstState = false; const h = decodeURIComponent(location.hash.slice(1));
-  if (h.startsWith('paper:')) { ui.paper = h.slice(6); showDrawer(); } else if (h) { ui.sel = h; showDrawer(); } } setLive(true, 'live · ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })); render();
+  if (h.startsWith('paper:')) { ui.paper = h.slice(6); showDrawer(); } else if (h) { ui.sel = h; showDrawer(); } } setLive(true, SNAP ? 'snapshot · ' + SNAP : 'live · ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })); render();
   if (ui.src === 'run') loadTrials();
   if (ui.sel && ui.dsrc === 'run') loadDrawer(ui.sel, true); else if (ui.paper) loadPaper(ui.paper, true); }
 function connect() {
@@ -562,7 +567,7 @@ function connect() {
   sse.addEventListener('state', (e) => onState(JSON.parse(e.data)));
   sse.onerror = () => { setLive(false, 'reconnecting'); };
 }
-async function poll() { try { onState(await (await fetch('/api/state')).json()); } catch (e) { setLive(false, 'offline'); } pollT = setTimeout(poll, 5000); }
+async function poll() { try { onState(await (await fetch('/api/state')).json()); } catch (e) { setLive(false, 'offline'); } if (!SNAP) pollT = setTimeout(poll, 5000); }
 setInterval(() => { document.querySelectorAll('[data-since]').forEach((el) => (el.textContent = ago(el.dataset.since))); if (S) kpis(); }, 15000);
 
 // ---------- drawer ----------
