@@ -444,7 +444,7 @@ function switchState() {
   main.classList.add('paused'); b.classList.add('on');
   b.innerHTML = `<b>Switch offline: the floor is paused.</b> The agents work through Switch, so nothing moves until it answers again. ${esc(w.error || '')}. Last DB state is shown below, dimmed.`;
 }
-const AV_RAW = 'https://raw.githubusercontent.com/AtharvaMaskar/quant-swarms-switch-hackathon/feat/deflate/assets/avatars/';
+const AV_RAW = 'https://raw.githubusercontent.com/AtharvaMaskar/quant-swarms-switch-hackathon/main/assets/avatars/';
 const initials = (n) => String(n).split(/[\s·-]+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join('');
 // local copy first (served from assets/avatars), then GitHub raw, then initials
 function avErr(img) { if (!img.dataset.raw) { img.dataset.raw = 1; img.src = AV_RAW + img.dataset.name + '.png'; return; }
@@ -455,7 +455,7 @@ function teams() {
   const A = w.agents.list || [], roles = w.agents.roles || [];
   $('teamsub').textContent = `#${w.room.name} on ${w.room.bridge || '—'} · ${w.live} of ${A.length} live${w.room.users.length ? ' · humans: ' + w.room.users.join(', ') : ''}`;
   $('teams').innerHTML = `<table><thead><tr><th>Agent</th><th>Status</th><th>Role</th><th>Runs on</th><th>Job</th></tr></thead><tbody>${A.map((a) => `<tr>
-<td><div class="who"><span class="av" data-i="${esc(initials(a.display || a.name))}"><img alt="" src="/avatars/${esc(a.name)}.png" data-name="${esc(a.name)}" onerror="avErr(this)"></span>
+<td><div class="who"><span class="av" data-i="${esc(initials(a.display || a.name))}"><img alt="" src="avatars/${esc(a.name)}.png" data-name="${esc(a.name)}" onerror="avErr(this)"></span>
 <div><div style="font-weight:500">${esc(a.display)}</div><div class="mono mute" style="font-size:11px">${esc(a.name)}</div></div></div></td>
 <td><span class="chip ${a.status === 'live' ? 'pass' : ''}"><span class="dot" style="background:${a.status === 'live' ? 'var(--green)' : 'var(--faint)'}"></span>${esc(a.status)}</span></td>
 <td>${a.roles.length ? a.roles.map((r) => `<span class="chip acc">${esc(r)}</span>`).join(' ') : '<span class="faint">—</span>'}</td>
@@ -678,7 +678,7 @@ ${dthr != null ? `<line x1="${10 + dthr * (W - 20)}" x2="${10 + dthr * (W - 20)}
 ${dthr !== .95 ? `<line x1="${10 + .95 * (W - 20)}" x2="${10 + .95 * (W - 20)}" y1="6" y2="26" stroke="var(--mute)" stroke-dasharray="2 2"/><text x="${10 + .95 * (W - 20)}" y="36" text-anchor="middle">confident .95</text>` : ''}
 <text x="10" y="36">DSR ${f(dsr, 3)}</text></svg>`;
   const gross = m.gross_inr, cost = m.cost_inr, net = m.net_inr;
-  const costs = gross ? `<svg width="100%" viewBox="0 0 ${W} 30" style="max-width:${W}px" role="img" aria-label="Gross versus costs"><rect x="10" y="6" width="${W - 20}" height="8" rx="2" fill="var(--green)" opacity=".75"/>
+  const costs = gross > 0 ? `<svg width="100%" viewBox="0 0 ${W} 30" style="max-width:${W}px" role="img" aria-label="Gross versus costs"><rect x="10" y="6" width="${W - 20}" height="8" rx="2" fill="var(--green)" opacity=".75"/>
 <rect x="${10 + Math.max(0, net) / gross * (W - 20)}" y="6" width="${Math.min(1, cost / gross) * (W - 20)}" height="8" fill="var(--red)" opacity=".75"/>
 <text x="10" y="26">net ${inr(net)}</text><text x="${W - 10}" y="26" text-anchor="end">costs ${inr(cost)} of gross ${inr(gross)}</text></svg>` : '';
   const cpN = C('cpcv'), cv = cpN.value && typeof cpN.value === 'object' ? cpN.value : {};

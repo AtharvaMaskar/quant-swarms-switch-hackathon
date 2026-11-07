@@ -312,7 +312,7 @@ function Board() {
     <section className="board paper">
       <div className="board-head layer">
         <div><Label n="12">Leaderboard</Label><Mask lines={['The board.']} /></div>
-        <p className="note" data-reveal>ILLUSTRATIVE ROWS. NO REAL STRATEGY RESULTS. THE LIVE BOT AND BUY-AND-HOLD ARE REFERENCE ROWS. SORTING BY DSR…</p>
+        <p className="note" data-reveal>ILLUSTRATIVE ROWS SHOWING HOW THE BOARD READS. REAL RESULTS ARE ON THE RESEARCH FLOOR BELOW. SORTING BY DSR…</p>
       </div>
       <div className="table-wrap layer" ref={ref} data-pop data-ui>
         <table>

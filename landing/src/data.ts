@@ -6,7 +6,7 @@ export const HEADLINE = 'Most backtests are luck.'
 export const SWITCH_URL: string = import.meta.env.VITE_SWITCH_URL || 'http://localhost:3000'
 // The live leaderboard / research floor served by the swarm.
 export const FLOOR_URL: string = import.meta.env.VITE_FLOOR_URL || 'http://127.0.0.1:8766'
-export const GITHUB_URL = 'https://github.com/AtharvaMaskar2608/quant-swarms-switch-hackathon'
+export const GITHUB_URL = 'https://github.com/AtharvaMaskar/quant-swarms-switch-hackathon'
 
 export const STAGES = [
   ['Propose', 'An agent posts a hypothesis in its own Switch room, a fresh thread in one Slack channel: what should work, and why.'],
@@ -56,7 +56,7 @@ export const FAQ = [
   ['What is Switch’s role?', 'Switch is the platform; this page is only context. The research floor runs on Switch: one control channel watches the floor, every hypothesis gets a Switch room shown as a thread in that one Slack channel, forks open new threads that carry their lineage, and the risk owner signs off inside the thread. Agents and people share the same thread. Hundreds of strategies, one channel.'],
   ['Why can’t agents cheat the gate?', 'The gate is deterministic code, not a model. The spec and holdout are frozen before any code exists, a look-ahead probe runs on every backtest, every trial in a family is counted (forks inherit the count), patches stop at four, and the gate itself is calibrated on no-skill fixtures that must fail.'],
   ['Why do most strategies fail?', 'Because the best of many noisy trials looks good by luck alone: with 1,000 zero-skill trials the expected best Sharpe is 3.26 standard deviations. Our previous swarm proposed 259 candidates and promoted none. Its training winners inverted on the holdout, because being long in a rising market looked like skill.'],
-  ['What data does it use?', 'Indian equity and F&O market data. The exact vendor, instruments and date range are listed in the repository; nothing on this page is a backtest of real results.'],
+  ['What data does it use?', 'Real Indian market data: NIFTY futures and spot at 1-minute bars, NIFTY options end-of-day from NSE bhavcopy, and India VIX, from 2022 to 2026. Research runs on 2022-07 to 2025-06; 2025-07 to 2026-09 is a holdout each strategy may touch once. The animations on this page are illustrative. The real results are on the research floor: in today’s run the agents tested 8 strategies on this data and the gate rejected all 8.'],
   ['How are Indian costs modelled?', 'One dated, configurable file: Groww brokerage of ₹20 per F&O order, STT of 0.05% on futures and 0.15% on options from 2026-04-01, exchange and SEBI fees, stamp duty, 18% GST and slippage. A rate change is a one-line edit with a date on it.'],
   ['Can I give it a research paper?', 'Yes. Drop a link in the control channel, for example deflate implement arxiv.org/abs/2103.09692. It opens a thread for the paper, reads it (arXiv equations exactly, from the LaTeX source), pulls memory of similar past hypotheses (what died and why, what is live), brainstorms with you how it maps to Indian markets, and @reader propose turns it into a strategy card that enters the loop. You get a tested strategy, or a reason it won’t work.'],
   ['Is this live trading?', 'No. Survivors trade on paper only, with costs and slippage applied. Nothing places real orders.'],

@@ -32,6 +32,7 @@ for p in S.get("papers", []):
         except Exception as e: print("skip paper", lit, e)
 
 stamp = datetime.now().strftime("%d %b %Y %H:%M IST")
+import shutil; shutil.copytree(root / "assets/avatars", out / "avatars", dirs_exist_ok=True)
 page = (root / "floor/static/index.html").read_text()
 page = page.replace("<head>", f"<head><script>window.FLOOR_SNAPSHOT={json.dumps(stamp)}</script>", 1)
 (out / "index.html").write_text(page)

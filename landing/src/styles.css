@@ -394,7 +394,7 @@ details[open] p { animation: fadein 0.45s var(--expo); }
   .now .desc { font-size: 0.8125rem; }
   .lineage td { padding: 6px 8px; }
 
-  .gate, .costs, .faq { grid-template-columns: 1fr; padding: 96px var(--m); }
+  .gate, .costs, .faq { grid-template-columns: minmax(0, 1fr); padding: 96px var(--m); }
   .gate-text { display: contents; }
   .gate-text > * { position: relative; z-index: 2; }
   .gate-stage-wrap { order: 0; }
