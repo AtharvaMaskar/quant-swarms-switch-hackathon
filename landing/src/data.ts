@@ -1,4 +1,7 @@
 export const NAME = 'Deflate'
+// The hero line. Its last word gets the strike and the live E[max SR] callout.
+// Alternatives on the table: 'Count every trial.' · 'Prove it or retire it.' · 'Alpha decays. Prove it first.'
+export const HEADLINE = 'Most backtests are luck.'
 // Switch Gateway's default host port is 3000 (GATEWAY_HOST_PORT in Switch's .env.example).
 export const SWITCH_URL: string = import.meta.env.VITE_SWITCH_URL || 'http://localhost:3000'
 export const GITHUB_URL = 'https://github.com/AtharvaMaskar2608/quant-swarms-switch-hackathon'
@@ -34,6 +37,8 @@ export const CHECKS = [
 // Shared, mutable gate state: the Gate UI writes it, the swarm engine reads it every frame.
 export const gate = { on: CHECKS.map(() => true) }
 export const CANDIDATES = 200
+// Shared loop stage: the Loop chapter decides it (scroll detents + idle auto-advance), the engine draws it.
+export const loopState = { station: 0 }
 
 export const BOARD = [
   { name: 'Live bot (the swarm’s own book)', status: 'reference', dsr: '—', trials: '—', days: 'since day 1', ref: true },

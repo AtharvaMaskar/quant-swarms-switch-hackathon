@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { MeshGradient } from '@paper-design/shaders-react'
 import { start } from './engine.ts'
 import { expectedMaxSharpe } from './stats.ts'
-import { NAME, SWITCH_URL, GITHUB_URL, STAGES, CHECKS, gate, CANDIDATES, BOARD, FAQ } from './data.ts'
+import { NAME, SWITCH_URL, GITHUB_URL, STAGES, CHECKS, gate, loopState, CANDIDATES, BOARD, FAQ } from './data.ts'
 import { useBeat, useInView, useReveal } from './hooks.ts'
 import { Hero, Nav, Ticker } from './Hero.tsx'
 import { BigMarquee, DitherBg, GrainBg, Odometer, startMotion, useFlip } from './fx.tsx'
@@ -35,16 +35,32 @@ function Pin({ beat, id, vh = 220, p, children, flip = false, theme }: { beat: s
   )
 }
 
+function Tangent() {
+  const ref = useRef<HTMLElement>(null), p = useBeat(ref)
+  const step = p < 0.36 ? 0 : p < 0.58 ? 1 : 2
+  return (
+    <Pin beat="tangent" id="problem" p={ref} vh={240} theme="paper">
+      <Label n="01">The tangent trap</Label>
+      <p className="kicker" data-reveal><em>Every quant knows this week.</em></p>
+      <Mask className="h-sm" lines={['One idea.', 'Ten tangents.', 'Nine dead ends.']} />
+      <div className="turns" data-reveal>
+        <p className={step === 0 ? 'on' : ''}>You start down one direction and come back with ten new ideas: a paper that might apply, a filter that might fix last quarter, a signal from a different market. Chase all ten and most end in dead ends. You lose months finding out.</p>
+        <p className={step === 1 ? 'on' : ''}>The idea that mattered was often already there: in a paper you read last year, or in a dead end that failed for a reason you could have fixed.</p>
+        <p className={step === 2 ? 'on' : ''}>AI is good at recall. It remembers every trial, every post-mortem, every paper you tagged, and connects them. {NAME} turns tangents into counted, tested trials in days, and remembers why each one died.</p>
+      </div>
+    </Pin>
+  )
+}
+
 function Cheap() {
   const ref = useRef<HTMLElement>(null), p = useBeat(ref)
   const max = typeof innerWidth !== 'undefined' && innerWidth < 760 ? 380 : 1200
   const n = Math.round(12 + (max - 12) * Math.pow(clamp(p / 0.85), 1.6))
   const life = p < 0.33 ? 'MONTHS' : p < 0.66 ? 'WEEKS' : 'DAYS'
   return (
-    <Pin beat="cheap" id="problem" p={ref} theme="paper">
-      <Label n="01">The problem</Label>
-      <p className="speaker" data-reveal>I’m an AI engineer building ML and quant algorithms for retail and HNI investors at a fintech.</p>
-      <Mask lines={['Strategies', 'got cheap.', <>Alpha got <em>scarce.</em></>]} />
+    <Pin beat="cheap" p={ref} theme="dark">
+      <Label n="02">Alpha decay</Label>
+      <Mask lines={['Strategies', 'got cheap.', <>Alpha got <span className="hard">scarce.</span></>]} />
       <div className="spec-panel" data-pop>
         <div className="sp-row"><span>STRATEGIES ON THE FLOOR</span><b className="tab"><Odometer value={n.toLocaleString('en-IN')} /></b></div>
         <div className="sp-row"><span>HOW LONG AN EDGE LASTS</span><b>{life}</b></div>
@@ -60,8 +76,8 @@ function Worse() {
   const ref = useRef<HTMLElement>(null), p = useBeat(ref)
   const n = Math.pow(10, 1 + 3 * clamp(p / 0.9)), row = Math.min(3, Math.round(Math.log10(n) - 1))
   return (
-    <Pin beat="worse" p={ref} flip theme="dark">
-      <Label n="02">The problem, multiplied</Label>
+    <Pin beat="worse" p={ref} flip theme="paper">
+      <Label n="03">The problem, multiplied</Label>
       <Mask lines={['Swarms make', 'it worse.']} />
       <p className="body" data-reveal>Every extra trial lifts the best backtest by <em>luck</em> alone. Expected best Sharpe from N strategies with zero skill:</p>
       <ul className="giants" data-reveal>
@@ -78,11 +94,11 @@ function Ours() {
   const ref = useRef<HTMLElement>(null), p = useBeat(ref)
   const standing = Math.max(0, 259 - Math.floor(clamp(p / 0.84) * 259))
   return (
-    <Pin beat="ours" p={ref} vh={200} theme="paper">
-      <Label n="03">Our own swarm</Label>
-      <Mask lines={['Found', 'nothing.']} />
+    <Pin beat="ours" p={ref} vh={200} theme="dark">
+      <Label n="04">We tried it</Label>
+      <Mask lines={['Zero', 'survived.']} />
       <div className="huge-num" data-reveal><b className="tab"><Odometer value={String(standing).padStart(3, '0')} /></b><span>{standing ? `OF 259 STILL STANDING ON THE HOLDOUT` : '259 PROPOSED · 0 PROMOTED'}</span></div>
-      <p className="body" data-reveal>Its training winners inverted on the holdout. Being long in a rising market had looked like skill.</p>
+      <p className="body" data-reveal>A swarm we built proposed 259 strategies. Zero survived. The winners on training data lost on the holdout: long exposure in a rising market looked like skill.</p>
     </Pin>
   )
 }
@@ -98,7 +114,7 @@ function Solution() {
   const cur = FLOOR.reduce((k, f, i) => (p >= (f[2] as number) ? i : k), 0)
   return (
     <Pin beat="solution" id="solution" p={ref} theme="dark">
-      <Label n="04">The solution</Label>
+      <Label n="05">The solution</Label>
       <Mask lines={['So the floor', 'moved into', 'Switch.']} />
       <p className="body" data-reveal>This page is context. The product lives in Switch, where agents and people share chat rooms.</p>
       <ol className="rows" data-reveal>
@@ -120,7 +136,7 @@ function Paper() {
   const ref = useRef<HTMLElement>(null), p = useBeat(ref)
   return (
     <Pin beat="paper" p={ref} flip theme="paper">
-      <Label n="05">Bring a paper</Label>
+      <Label n="06">Bring a paper</Label>
       <Mask className="h-sm" lines={['Tag a paper.', 'Get a tested', 'strategy,', <><em>or a reason it won’t work.</em></>]} />
       <ol className="chat" data-reveal>
         {CHAT.map(([who, text, at], i) => (
@@ -133,16 +149,43 @@ function Paper() {
   )
 }
 
+// Detents: scroll position picks the stage (floor), so slow scrolling still jumps station to station.
+// While the chapter is pinned and the reader is idle, it auto-advances; the gate dwells longer.
+function useStation(p: number) {
+  const fromScroll = Math.min(9, Math.floor(clamp(p / 0.95) * 10))
+  const [auto, setAuto] = useState(0)
+  const lastScroll = useRef(0)
+  useEffect(() => {
+    const on = () => { lastScroll.current = performance.now() }
+    addEventListener('scroll', on, { passive: true })
+    return () => removeEventListener('scroll', on)
+  }, [])
+  useEffect(() => setAuto(0), [fromScroll])
+  const station = (fromScroll + auto) % 10
+  const pinned = p > 0.001 && p < 0.999
+  useEffect(() => {
+    if (!pinned || matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const dwell = station === 4 ? 2200 : 1400
+    const id = setTimeout(function tick() {
+      if (performance.now() - lastScroll.current > 1000) setAuto(a => a + 1)
+      else setTimeout(tick, 400)
+    }, dwell)
+    return () => clearTimeout(id)
+  }, [station, pinned])
+  loopState.station = station
+  return station
+}
+
 function Loop() {
   const ref = useRef<HTMLElement>(null), p = useBeat(ref)
-  const active = Math.min(9, Math.floor(clamp(p / 0.95) * 10))
+  const active = useStation(p)
   return (
     <Pin beat="loop" id="loop" p={ref} vh={260} theme="dark">
-      <Label n="06">The loop</Label>
+      <Label n="07">The loop</Label>
       <Mask lines={['Agents propose.', 'Code decides.']} />
-      <div className="now repop" aria-live="polite" key={active}>
-        <span className="mlabel tab">STAGE {String(active + 1).padStart(2, '0')} / 10</span>
-        <b>{STAGES[active][0]}</b><span className="desc">{STAGES[active][1]}</span>
+      <div className={`now ${active === 4 ? 'heavy' : ''}`} aria-live="polite">
+        <span className="mlabel tab">STAGE <Odometer value={String(active + 1).padStart(2, '0')} /> / 10</span>
+        <div className="flip" key={active}><b>{STAGES[active][0]}</b><span className="desc">{STAGES[active][1]}</span></div>
       </div>
     </Pin>
   )
@@ -159,7 +202,7 @@ function Gate() {
   return (
     <section className="gate paper dots" id="gate" data-beat="gate" data-theme="paper">
       <div className="gate-text layer">
-        <Label n="07">The gate</Label>
+        <Label n="08">The gate</Label>
         <Mask lines={['Twelve checks.', 'Switch any off.']} />
         <p className="body" data-reveal>Deterministic code, no model in the loop. Each band catches what fails it. Pass rates are illustrative; the checks follow López de Prado’s <em>Advances in Financial Machine Learning.</em></p>
         <div className="tally" ref={ref} data-reveal>
@@ -189,7 +232,7 @@ function Forks() {
   const ref = useRef<HTMLElement>(null), p = useBeat(ref)
   return (
     <Pin beat="forks" id="rooms" p={ref} vh={200} flip theme="dark">
-      <Label n="08">Rooms and forks</Label>
+      <Label n="09">Rooms and forks</Label>
       <Mask lines={['Forks inherit', 'the count.']} />
       <div className="huge-num grad" data-reveal><b className="tab">41</b><span>TRIALS h12.1 IS CHARGED WITH. NEVER 1.</span></div>
       <table className="lineage" data-reveal>
@@ -220,7 +263,7 @@ function Costs() {
   return (
     <section className="costs paper">
       <div className="costs-text layer">
-        <Label n="09">Indian costs</Label>
+        <Label n="10">Indian costs</Label>
         <Mask lines={['Costs,', 'dated.']} />
         <p className="body" data-reveal>A backtest without STT is a story. Every trade pays brokerage, securities transaction tax, exchange and SEBI fees, stamp duty and GST, plus slippage. They live in one dated file the gate reads, so a rate change is a one-line edit with a date on it.</p>
         <figure className="photo" data-reveal>
@@ -244,7 +287,7 @@ function Decay() {
   const ref = useRef<HTMLElement>(null), p = useBeat(ref)
   return (
     <Pin beat="decay" p={ref} theme="dark">
-      <Label n="10">Decay</Label>
+      <Label n="11">Decay</Label>
       <Mask lines={['Decay', 'retires it.']} />
       <ol className="rows tight" data-reveal>{DECAY.map(([t, at], i) => <li key={t} className={p >= at && (i === DECAY.length - 1 || p < DECAY[i + 1][1]) ? 'on' : p >= at ? 'done' : ''}><span className="rn tab">0{i + 1}</span><div><b>{t}</b></div></li>)}</ol>
       <p className="body" data-reveal>A CUSUM detector and an entropy check watch live returns. When the edge fades past the threshold, the strategy stops, and what it taught the swarm goes back into the loop.</p>
@@ -264,7 +307,7 @@ function Board() {
   return (
     <section className="board paper">
       <div className="board-head layer">
-        <div><Label n="11">Leaderboard</Label><Mask lines={['The board.']} /></div>
+        <div><Label n="12">Leaderboard</Label><Mask lines={['The board.']} /></div>
         <p className="note" data-reveal>ILLUSTRATIVE ROWS. NO REAL STRATEGY RESULTS. THE LIVE BOT AND BUY-AND-HOLD ARE REFERENCE ROWS. SORTING BY DSR…</p>
       </div>
       <div className="table-wrap layer" ref={ref} data-pop data-ui>
@@ -290,7 +333,7 @@ function Faq() {
   return (
     <section className="faq dark dots" id="faq">
       <DitherBg shape="warp" />
-      <div className="layer"><Label n="12">FAQ</Label><Mask lines={['Questions', 'from the', 'judges’ table.']} /></div>
+      <div className="layer"><Label n="13">FAQ</Label><Mask lines={['Questions', 'from the', 'judges’ table.']} /></div>
       <div className="faq-list layer">
         {FAQ.map(([q, a], i) => (
           <details key={q} data-reveal>
@@ -310,7 +353,7 @@ function Manifesto() {
     <section className="manifesto electric" data-beat="manifesto" data-theme="electric" data-pin ref={ref} style={{ height: '220vh' }}>
       <div className="sticky">
         <GrainBg />
-        <p className="mlabel layer">13 / WHY</p>
+        <p className="mlabel layer">14 / WHY</p>
         <p className="manifesto-text layer">
           {MANIFESTO.map((w, i) => <span key={i} className={`${p > (i / MANIFESTO.length) * 0.7 + 0.05 ? 'on' : ''} ${w.startsWith('creativity') ? 'it' : ''}`}>{w} </span>)}
         </p>
@@ -328,7 +371,7 @@ const CREDITS = [
 function Credits() {
   return (
     <section className="credits paper">
-      <div className="layer"><Label n="14">Credits</Label><Mask lines={['Standing on', 'other people’s work.']} /></div>
+      <div className="layer"><Label n="15">Credits</Label><Mask lines={['Standing on', 'other people’s work.']} /></div>
       <ul className="layer">{CREDITS.map(([t, d, href], i) => <li key={t} data-reveal data-tilt><span className="mlabel">C{i + 1}</span>{href ? <a href={href}><b>{t} ↗</b></a> : <b>{t}</b>}<span>{d}</span></li>)}</ul>
     </section>
   )
@@ -362,6 +405,7 @@ export default function App() {
       <main>
         <Hero />
         <Ticker />
+        <Tangent />
         <Cheap />
         <Worse />
         <Ours />

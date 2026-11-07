@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
-import { NAME, SWITCH_URL, GITHUB_URL } from './data.ts'
+import { NAME, HEADLINE, SWITCH_URL, GITHUB_URL } from './data.ts'
 import { useInView, useTyping } from './hooks.ts'
 import { expectedMaxSharpe } from './stats.ts'
-import { Assemble, DitherBg } from './fx.tsx'
+import { Assemble, Odometer } from './fx.tsx'
 
 const LINKS = [['Problem', 'problem'], ['Loop', 'loop'], ['Gate', 'gate'], ['Rooms', 'rooms'], ['FAQ', 'faq']] as const
 
@@ -130,30 +130,58 @@ function Terminal() {
   )
 }
 
-const WORDS = ['propose', 'prove', 'retire']
-function Words() {
-  const [i, setI] = useState(0)
+type Stat = { trials: number; passes: number; roots: number; forks: number; luck: number }
+function useStat(): Stat {
+  const [stat, setStat] = useState<Stat>({ trials: 0, passes: 0, roots: 0, forks: 0, luck: 0 })
   useEffect(() => {
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return
-    const id = setInterval(() => setI(v => (v + 1) % WORDS.length), 2000)
-    return () => clearInterval(id)
-  }, [])
-  return <ul className="words" aria-label="propose, prove, retire">{WORDS.map((w, k) => <li key={w} className={k === i ? 'on' : ''}>{w}</li>)}</ul>
-}
-
-function Board() {
-  const [trials, setTrials] = useState(0)
-  useEffect(() => {
-    const on = (e: Event) => setTrials((e as CustomEvent<number>).detail)
+    const on = (e: Event) => setStat((e as CustomEvent<Stat>).detail)
     addEventListener('trials', on)
     return () => removeEventListener('trials', on)
   }, [])
+  return stat
+}
+
+/** The swarm board, drawn as a chart: Sharpe on the y-axis, the luck line across it. */
+function Board() {
   return (
-    <div className="led" data-ui data-pop data-tilt>
-      <div className="led-bar"><span><b className="live-dot" /> SWARM · LIVE</span><span className="tab">TRIALS {String(trials).padStart(3, '0')} · LUCK ALONE ⇒ {expectedMaxSharpe(trials).toFixed(2)}σ</span></div>
+    <div className="led" data-ui data-pop>
+      <div className="led-bar"><span><b className="live-dot" /> SWARM · LIVE</span><span>EACH CLUSTER IS A ROOM, PLOTTED AT ITS BACKTEST SHARPE</span></div>
       <div className="led-stage" data-stage aria-hidden="true" />
-      <div className="led-foot"><span>■ AGENT</span><span className="g">■ PASS</span><span className="r">■ FAIL → DROPPED</span></div>
+      <div className="led-foot"><span>■ TESTING</span><span className="g">■ ABOVE LUCK → PASS, FORKS</span><span className="r">■ BELOW LUCK → FAIL, DROPS</span></div>
     </div>
+  )
+}
+
+/** Four hard-ruled cells under the hero, live from the board. */
+function StatBar({ stat }: { stat: Stat }) {
+  const cells: [string, string, string][] = [
+    ['TRIALS', String(stat.trials).padStart(3, '0'), 'every attempt, forks included'],
+    ['LUCK ALONE', stat.luck.toFixed(2), 'σ · E[max SR] of zero-skill trials'],
+    ['PASS RATE', `${stat.passes}/${stat.trials}`, 'rooms that beat luck'],
+    ['FAMILIES', String(stat.roots).padStart(2, '0'), 'hypotheses, before forks'],
+  ]
+  return (
+    <div className="statbar layer" aria-label="Live hero board statistics">
+      {cells.map(([k, v, d]) => (
+        <div key={k} className="cell"><span className="mlabel">{k}</span><b className="tab"><Odometer value={v} /></b><span className="cd">{d}</span></div>
+      ))}
+    </div>
+  )
+}
+
+/** The headline. Its last word is struck through and carries a live chart callout tied to the board's trial count. */
+function Headline({ trials, luck }: { trials: number; luck: number }) {
+  const words = HEADLINE.split(' ')
+  const last = words.pop()!
+  let i = 0
+  return (
+    <h1 className="mega assemble" aria-label={HEADLINE}>
+      {words.map(w => <span key={w}><span className="wd" aria-hidden="true"><Assemble text={w} start={(i += w.length) - w.length} /></span>{' '}</span>)}
+      <span className="wd struck" aria-hidden="true">
+        <Assemble text={last} start={i} />
+        <span className="callout tab">E[max SR] = {(luck || expectedMaxSharpe(2)).toFixed(2)}σ @ {Math.max(trials, 2).toLocaleString('en-IN')} trials</span>
+      </span>
+    </h1>
   )
 }
 
@@ -174,25 +202,23 @@ export function Ticker({ dark = false }: { dark?: boolean }) {
 }
 
 export function Hero() {
+  const stat = useStat()
   return (
     <header className="hero dark dots" data-beat="hero" data-theme="dark" id="top">
-      <DitherBg />
-      <div className="hero-head layer">
-        <p className="mlabel">00 / {NAME.toUpperCase()} — A RESEARCH FLOOR ON SWITCH</p>
-        <h1 className="mega assemble" aria-label="Most alpha is luck."><span className="ln" aria-hidden="true"><Assemble text="Most alpha" /></span><span className="ln" aria-hidden="true"><Assemble text="is " start={10} /><em className="luck" style={{ '--i': 13 } as React.CSSProperties}>luck.</em></span></h1>
-      </div>
-      <div className="hero-row layer">
-        <div className="hero-copy">
+      <div className="hero-fold">
+        <div className="hero-left layer">
+          <p className="mlabel">00 / {NAME.toUpperCase()} — A RESEARCH FLOOR ON SWITCH</p>
+          <Headline trials={stat.trials} luck={stat.luck} />
           <p className="pos" data-reveal>The research floor for agentic quant teams.</p>
           <p className="lead" data-reveal>{NAME} is a research swarm where agents propose, code decides, and humans sign off, running in Switch rooms. Self-hosted and open-source.</p>
           <div className="btns" data-reveal>
             <a className="btn solid" href={SWITCH_URL}>Open in Switch ↗</a>
             <a className="btn line" href={GITHUB_URL}>GitHub</a>
           </div>
-          <Words />
         </div>
-        <Board />
+        <div className="hero-right layer"><Board /></div>
       </div>
+      <StatBar stat={stat} />
       <div className="hero-app layer" data-reveal><App /><Terminal /></div>
     </header>
   )

@@ -14,7 +14,7 @@
   --mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
 
   --m: clamp(16px, 3.6vw, 56px);
-  --pad: max(var(--m), calc((100vw - 1360px) / 2));
+  --pad: max(var(--m), calc((100vw - 1680px) / 2));
   --expo: cubic-bezier(0.16, 1, 0.3, 1);
   --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
@@ -80,7 +80,7 @@ h2 em { letter-spacing: -0.02em; }
 /* ---------- Nav ---------- */
 .nav {
   position: fixed; z-index: 50; top: 12px; left: 50%; transform: translateX(-50%);
-  width: min(1360px, calc(100% - 2 * var(--m))); height: 52px; display: flex; align-items: center; gap: 24px;
+  width: min(1680px, calc(100% - 2 * var(--m))); height: 52px; display: flex; align-items: center; gap: 24px;
   padding: 0 6px 0 18px; background: var(--ink); color: #fff; border: 1px solid rgba(201, 205, 251, 0.25);
 }
 .nav-mark { display: flex; align-items: center; gap: 10px; text-decoration: none; font: 900 1.125rem/1 var(--display); font-stretch: 125%; text-transform: uppercase; letter-spacing: -0.02em; }
@@ -433,7 +433,7 @@ details[open] p { animation: fadein 0.45s var(--expo); }
 
 /* Dithered wave fields sit on the section background, under the swarm canvas. */
 .dither-bg { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
-.dither-bg > * { opacity: 0.85; }
+.dither-bg > * { opacity: 0.45; }
 .hero, .faq { position: relative; }
 .pin .sticky { overflow: hidden; }
 
@@ -469,7 +469,7 @@ details[open] p { animation: fadein 0.45s var(--expo); }
   100% { font-stretch: 125%; transform: none; }
 }
 /* "luck" is printed in a moving gradient, and wobbles and refracts on hover. */
-.mega em.luck, .manifesto-text span.it.on, .h-sm em, .speaker-em {
+.manifesto-text span.it.on {
   background: linear-gradient(100deg, var(--lav) 0%, var(--hot) 35%, #8BE9FF 55%, var(--lav) 80%) 0 0 / 250% 100%;
   -webkit-background-clip: text; background-clip: text; color: transparent; animation: sweep 5s linear infinite;
 }
@@ -562,3 +562,102 @@ html.has-cursor, html.has-cursor * { cursor: none !important; }
   .js [data-pop]:not(.in) { opacity: 1; }
   .pin h2, .gate h2, .costs h2, .board h2, .faq h2, .credits h2, .bm-skew { transform: none; }
 }
+
+/* =====================================================================
+   Hero v5: the fold fits at every size. Sized from width (container) and height (vh).
+   ===================================================================== */
+.hero { padding: 0 var(--pad) 96px; }
+.hero-fold {
+  min-height: 100svh; display: grid; grid-template-columns: 7fr 5fr; gap: clamp(24px, 3vw, 56px); align-items: center;
+  padding: calc(64px + 3vh) 0 3vh;
+}
+.hero-left { container-type: inline-size; }
+.hero-left .mlabel { margin-bottom: min(20px, 2.4vh); }
+.hero .mega { font-size: min(11.2cqi, 11vh); line-height: 0.86; white-space: normal; margin-bottom: calc(14px + 2.2em * 0); }
+.wd { display: inline-block; white-space: nowrap; }
+/* The struck word: outline, a hard red strike, and a live chart callout under it. */
+.struck { position: relative; color: transparent; -webkit-text-stroke: max(1.5px, 0.022em) var(--lav); }
+.struck::after {
+  content: ''; position: absolute; left: -0.04em; right: -0.02em; top: 50%; height: 0.085em; background: var(--red);
+  transform-origin: left center;
+}
+.js .struck::after { animation: strike 0.5s 1.5s cubic-bezier(0.7, 0, 0.2, 1) backwards; }
+@keyframes strike { from { transform: scaleX(0); } }
+.callout {
+  position: absolute; left: 0; top: calc(100% + 6px); white-space: nowrap; -webkit-text-stroke: 0; color: var(--lav);
+  font: 500 clamp(10px, min(0.85vw, 1.5vh), 13px)/1 var(--mono); letter-spacing: 0.04em; text-transform: none;
+  padding: 7px 10px 6px; border: 1px solid rgba(201, 205, 251, 0.5); background: var(--indigo);
+}
+.callout::before { content: ''; position: absolute; left: 14px; top: -7px; width: 1px; height: 6px; background: rgba(201, 205, 251, 0.6); }
+.js .callout { animation: rise-in 0.5s 1.9s var(--expo) backwards; }
+.hero .pos { margin-top: calc(min(22px, 2.6vh) + 1.7em); font-size: clamp(1rem, min(1.6vw, 2.7vh), 1.75rem); max-width: 22ch; }
+.hero .lead { margin-top: min(16px, 1.8vh); font-size: clamp(0.875rem, min(1.15vw, 2vh), 1.0625rem); }
+.hero .btns { margin-top: min(28px, 3vh); }
+.hero-right .led-stage { height: clamp(240px, calc(100svh - 300px), 640px); }
+.hero-app { margin-top: 40px; }
+@media (max-width: 900px) {
+  .hero-fold { grid-template-columns: 1fr; min-height: 0; padding: 84px 0 0; gap: 32px; }
+  .hero .mega { font-size: min(12cqi, 9vh); }
+  .hero-right .led-stage { height: 300px; }
+}
+
+/* Problem chapters, v5 */
+.kicker { font-size: clamp(1.125rem, 1.6vw, 1.5rem); line-height: 1.2; margin-bottom: 14px; }
+.kicker em { color: var(--acc); }
+.hard { color: transparent; -webkit-text-stroke: max(1.5px, 0.022em) var(--acc); }
+.turns { margin-top: 24px; display: grid; gap: 14px; max-width: 50ch; }
+.turns p { font-size: 1rem; line-height: 1.5; color: var(--dim); padding-left: 14px; border-left: 2px solid var(--rule); transition: color 0.4s, border-color 0.4s; }
+.turns p.on { color: var(--fg); border-color: var(--acc); }
+.paper .giants b { -webkit-text-stroke-color: rgba(10, 10, 11, 0.3); }
+.paper .giants li.on b { background-image: linear-gradient(100deg, var(--electric), var(--violet) 35%, var(--hot) 60%, var(--electric) 90%); }
+.paper .giants li.on span { color: var(--ink); }
+.dark .spec-panel { background: var(--indigo-2); }
+.dark .tl-bar { background: var(--lav); }
+@media (max-width: 900px) {
+  .turns p:not(.on) { display: none; }
+  .turns p { font-size: 0.8125rem; }
+  .kicker { font-size: 1rem; margin-bottom: 6px; }
+}
+
+/* =====================================================================
+   Hero v6: wide split + live stat bar. The board is a chart and bleeds to the right edge.
+   ===================================================================== */
+:root { --sb: clamp(88px, 13vh, 128px); }
+.hero { padding: 0 0 96px var(--pad); }
+.hero-fold { grid-template-columns: 7fr 5fr; gap: 0; align-items: stretch; min-height: calc(100svh - var(--sb)); padding: calc(64px + 3vh) 0 0; }
+.hero-left { align-self: center; padding: 2vh clamp(24px, 3vw, 56px) 3vh 0; }
+.hero-right { display: flex; }
+.hero-right .led { flex: 1; display: flex; flex-direction: column; border-right: 0; border-bottom: 0; }
+.hero-right .led-stage { flex: 1; height: auto; min-height: 240px; }
+.statbar { display: grid; grid-template-columns: repeat(4, 1fr); height: var(--sb); margin-left: calc(-1 * var(--pad)); width: 100vw; background: var(--ink); color: #fff; border-block: 1px solid rgba(201, 205, 251, 0.3); }
+.statbar .cell { display: grid; align-content: center; gap: 4px; padding: 0 clamp(14px, 2vw, 32px); border-right: 1px solid rgba(201, 205, 251, 0.22); min-width: 0; }
+.statbar .cell:first-child { padding-left: var(--pad); }
+.statbar .cell:last-child { border-right: 0; }
+.statbar .mlabel { margin: 0; color: var(--lav); }
+.statbar b { font: 900 clamp(1.75rem, min(3.2vw, 5.4vh), 3.5rem)/1 var(--display); font-stretch: 125%; letter-spacing: -0.03em; white-space: nowrap; }
+.statbar .cd { font: 500 0.6875rem/1.2 var(--mono); color: rgba(255, 255, 255, 0.55); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.statbar .cell:nth-child(2) b { color: var(--red); }
+.statbar .cell:nth-child(3) b { color: #3DDC84; }
+.hero-app { margin: 64px var(--pad) 0 0; }
+.odo-d { vertical-align: -0.12em; }
+.statbar .odo-d { vertical-align: top; }
+
+/* Loop: the stage card flips like a mechanical counter. */
+.now .flip { animation: cardflip 0.2s cubic-bezier(0.2, 1.5, 0.4, 1) backwards; }
+@keyframes cardflip { from { clip-path: inset(0 0 100% 0); transform: translateY(-12px); } }
+.now.heavy { border-color: var(--red); box-shadow: 8px 8px 0 var(--red); }
+.now.heavy b { color: #fff; }
+
+@media (max-width: 900px) {
+  .hero { padding: 0 var(--m) 64px; }
+  .hero-fold { grid-template-columns: 1fr; min-height: 0; padding-top: 84px; gap: 28px; }
+  .hero-left { padding: 0; }
+  .hero-right .led { border-right: 2px solid transparent; }
+  .hero-right .led-stage { min-height: 320px; }
+  .statbar { margin-left: calc(-1 * var(--m)); grid-template-columns: 1fr 1fr; height: auto; margin-top: 28px; }
+  .statbar .cell { padding: 14px var(--m); border-bottom: 1px solid rgba(201, 205, 251, 0.22); }
+  .statbar .cell:first-child { padding-left: var(--m); }
+  .statbar .cd { display: none; }
+  .hero-app { margin-right: 0; }
+}
+@media (max-width: 480px) { .nav-tag { display: none; } }

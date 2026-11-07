@@ -11,10 +11,10 @@
   the next reads as the same swarm morphing into a new figure.
 */
 import { expectedMaxSharpe } from './stats.ts'
-import { CHECKS, gate } from './data.ts'
+import { CHECKS, gate, loopState } from './data.ts'
 
 // Particle colours by role, for paper and dark fields. Index = role.
-const PAPER = ['#2B2FD9', '#8F8D84', '#0A0A0B', '#C9C6BB', '#FF3B2F', '#0F9D58', '#2B2FD9']
+const PAPER = ['#2B2FD9', '#7B7FD8', '#0A0A0B', '#C9C6BB', '#FF3B2F', '#0F9D58', '#2B2FD9']
 const DARK = ['#C9CDFB', '#8A90E0', '#FFFFFF', '#5A60B8', '#FF4D3D', '#3DDC84', '#C9CDFB']
 const INDIGO = 0, PERI = 1, INK = 2, LAV = 3, CORAL = 4, GREEN = 5, PALE = 6
 // Line and label colours for whichever beat is drawing; set before each under()/over().
@@ -57,58 +57,152 @@ function label(g: CanvasRenderingContext2D, text: string, x: number, y: number, 
   g.globalAlpha = 1
 }
 
-/* ---------- Hero: an LED board of agent clusters. Rooms form, most fail red and drop, a few fork. ---------- */
-const ANCHORS = [[0.14, 0.3], [0.32, 0.68], [0.5, 0.28], [0.68, 0.66], [0.86, 0.32], [0.22, 0.5], [0.78, 0.5], [0.5, 0.72]]
-const SLOTS = 5, PERIOD = 9
-let lastTrials = -1
-function slot(s: number, t: number, f: F) {
-  const off = s * 1.9
-  const cycle = Math.floor((t + off) / PERIOD), lt = f.reduce ? 6 : (t + off) % PERIOD
-  const anchor = ANCHORS[Math.floor(hash(s * 31 + cycle) * ANCHORS.length)]
-  const pass = hash(s * 17 + cycle * 3) < 0.3
-  const cx = f.L + f.W * anchor[0], cy = f.T + f.H * anchor[1]
-  const form = clamp(lt / 1.2)
-  const drop = !pass && lt > 6.4 ? Math.pow(lt - 6.4, 2) * f.H * 0.35 : 0
-  const life = pass ? (lt > 8.4 ? clamp(1 - (lt - 8.4) / 0.6) : form) : clamp(1 - (lt - 7.6) / 0.9) * form
-  const ang = hash(s * 7 + cycle) * Math.PI * 2
-  const child = { x: cx + Math.cos(ang) * f.W * 0.13, y: cy + Math.sin(ang) * f.H * 0.22, on: pass && lt > 6 ? clamp((lt - 6) / 0.8) * life : 0 }
-  const verdict = lt > 5.6 ? (pass ? GREEN : CORAL) : -1
-  return { cx, cy, life, child, verdict, drop, cycle, id: 11 + cycle * SLOTS + s }
+/* ---------- Hero: an LED chart. Each cluster is a room, plotted at its backtest Sharpe.
+   The dashed line is what luck alone predicts for the trials run so far; rooms under it FAIL and drop,
+   the rare one above it PASSes and forks. ---------- */
+const SLOTS = 8, PERIOD = 10, SR_MAX = 4
+let lastStat = ''
+const AX = 46 // px reserved for the y-axis inside the board
+function heroScale(f: F) {
+  const top = f.T + 18, bottom = f.T + f.H - 22
+  return { x0: f.L + AX, x1: f.L + f.W - 16, y: (sr: number) => bottom - (sr / SR_MAX) * (bottom - top), bottom, top }
+}
+function trialsAt(t: number) {
+  let roots = 0, forks = 0, passes = 0
+  for (let s = 0; s < SLOTS; s++) {
+    const off = s * (PERIOD / SLOTS), done = Math.max(0, Math.floor((t + off) / PERIOD))
+    roots += done + 1
+    for (let c = 0; c < done; c++) if (hash(s * 17 + c * 3) < 0.14) { passes++; forks++ }
+  }
+  return { roots, forks, passes, trials: 12 * SLOTS + roots + forks } // the swarm had a head start before you arrived
+}
+function slot(s: number, t: number, f: F, luck: number) {
+  const off = s * (PERIOD / SLOTS)
+  const cycle = Math.floor((t + off) / PERIOD), lt = f.reduce ? 6.5 : (t + off) % PERIOD
+  const pass = hash(s * 17 + cycle * 3) < 0.14
+  const sr = pass ? luck + 0.25 + 0.45 * hash(s + cycle * 7) : 0.3 + (luck - 0.5) * hash(s * 3 + cycle * 11)
+  const sc = heroScale(f)
+  const cx = sc.x0 + (sc.x1 - sc.x0) * (0.08 + 0.84 * ((s + 0.5 * hash(cycle + s)) / SLOTS))
+  const target = sc.y(sr)
+  // A room forms near the floor, climbs to its Sharpe, then the gate rules on it.
+  const climb = clamp((lt - 0.4) / 2.4)
+  const cy = sc.bottom - (sc.bottom - target) * (1 - Math.pow(1 - climb, 3))
+  const form = clamp(lt / 1)
+  const drop = !pass && lt > 6 ? Math.pow(lt - 6, 2) * f.H * 0.3 : 0
+  const life = pass ? (lt > 9.3 ? clamp(1 - (lt - 9.3) / 0.6) : form) : clamp(1 - (lt - 7.4) / 1) * form
+  const child = { x: cx + 54, y: target - 26, on: pass && lt > 6 ? clamp((lt - 6) / 0.8) * life : 0 }
+  const verdict = lt > 5.4 ? (pass ? GREEN : CORAL) : -1
+  return { cx, cy, sr, life, child, verdict, drop, id: 100 + cycle * SLOTS + s }
 }
 const hero: Beat = {
   targets(ps, f) {
-    const n = Math.min(ps.length, f.phone ? 220 : 560)
-    const sig = Math.min(f.W, f.H) * (f.phone ? 0.075 : 0.06)
-    const slots = Array.from({ length: SLOTS }, (_, s) => slot(s, f.t, f))
-    const trials = slots.reduce((k, o) => k + o.cycle + 1 + (o.child.on > 0 ? 1 : 0), 0)
-    if (trials !== lastTrials) { lastTrials = trials; dispatchEvent(new CustomEvent('trials', { detail: trials })) }
+    const stat = trialsAt(f.t), luck = expectedMaxSharpe(stat.trials)
+    const key = `${stat.trials}|${stat.passes}|${stat.roots}`
+    if (key !== lastStat) { lastStat = key; dispatchEvent(new CustomEvent('trials', { detail: { ...stat, luck } })) }
+    const n = Math.min(ps.length, f.phone ? 240 : 640)
+    const sig = Math.min(f.W, f.H) * (f.phone ? 0.04 : 0.032)
+    const slots = Array.from({ length: SLOTS }, (_, s) => slot(s, f.t, f, luck))
     for (let i = 0; i < n; i++) {
       const p = ps[i], o = slots[i % SLOTS], isChild = Math.floor(i / SLOTS) % 4 === 0
-      const rot = f.t * 0.25 * (p.s3 > 0.5 ? 1 : -1)
-      const ox = (p.z * Math.cos(rot) - p.z2 * Math.sin(rot)) * sig, oy = (p.z * Math.sin(rot) + p.z2 * Math.cos(rot)) * sig
-      let x = (isChild ? o.child.x : o.cx) + ox * (isChild ? 0.55 : 1)
-      let y = (isChild ? o.child.y : o.cy) + oy * (isChild ? 0.55 : 1) + (isChild ? 0 : o.drop * (0.6 + p.s1 * 0.8))
+      const rot = f.t * 0.3 * (p.s3 > 0.5 ? 1 : -1)
+      const ox = (p.z * Math.cos(rot) - p.z2 * Math.sin(rot)) * sig, oy = (p.z * Math.sin(rot) + p.z2 * Math.cos(rot)) * sig * 0.8
+      let x = (isChild ? o.child.x : o.cx) + ox * (isChild ? 0.6 : 1)
+      let y = (isChild ? o.child.y : o.cy) + oy * (isChild ? 0.6 : 1) + (isChild ? 0 : o.drop * (0.6 + p.s1 * 0.8))
       const d = Math.hypot(f.mx - x, f.my - y)
-      if (d < 140) { const k = 0.4 * (1 - d / 140); x += (f.mx - x) * k; y += (f.my - y) * k }
+      if (d < 120) { const k = 0.35 * (1 - d / 120); x += (f.mx - x) * k; y += (f.my - y) * k }
       const c = o.verdict === CORAL && !isChild ? CORAL : o.verdict === GREEN ? GREEN : i % 5 === 0 ? INK : INDIGO
-      set(p, x, y, isChild ? o.child.on : o.life, 1.7 + p.s1 * 1.1, c)
+      set(p, x, y, isChild ? o.child.on : o.life, 1.6 + p.s1 * 1, c)
       if (o.drop > 0 && !isChild) p.snap = true
     }
   },
+  under(g, f, mix) {
+    const sc = heroScale(f), luck = expectedMaxSharpe(trialsAt(f.t).trials)
+    g.globalAlpha = 0.5 * mix; g.strokeStyle = col('acc'); g.lineWidth = 1
+    g.beginPath(); g.moveTo(sc.x0, sc.top); g.lineTo(sc.x0, sc.bottom); g.lineTo(sc.x1, sc.bottom); g.stroke()
+    for (let k = 1; k < SR_MAX; k++) {
+      const y = sc.y(k)
+      g.globalAlpha = 0.5 * mix; g.beginPath(); g.moveTo(sc.x0 - 5, y); g.lineTo(sc.x0, y); g.stroke()
+      g.globalAlpha = 0.1 * mix; g.beginPath(); g.moveTo(sc.x0, y); g.lineTo(sc.x1, y); g.stroke()
+      label(g, `${k}σ`, sc.x0 - 9, y + 4, { align: 'right', alpha: mix })
+    }
+    label(g, 'SR', sc.x0 - 9, sc.top + 4, { align: 'right', alpha: mix })
+    // Luck alone: the best Sharpe zero-skill trials would show by now.
+    const y = sc.y(luck)
+    g.globalAlpha = 0.9 * mix; g.strokeStyle = col('red'); g.lineWidth = 1.5; g.setLineDash([6, 5])
+    g.beginPath(); g.moveTo(sc.x0, y); g.lineTo(sc.x1, y); g.stroke(); g.setLineDash([])
+    label(g, `LUCK ALONE ${luck.toFixed(2)}σ`, sc.x1, y - 8, { align: 'right', color: col('red'), weight: 700, alpha: mix })
+    g.globalAlpha = 1
+  },
   over(g, f, mix) {
+    const luck = expectedMaxSharpe(trialsAt(f.t).trials)
     for (let s = 0; s < SLOTS; s++) {
-      const o = slot(s, f.t, f)
+      const o = slot(s, f.t, f, luck)
       const a = Math.min(o.life, clamp(1 - o.drop / 60)) * mix
-      if (a > 0.02) {
-        label(g, `h${o.id}`, o.cx + 46, o.cy - 34, { color: col('ink'), weight: 600, alpha: a })
-        if (o.verdict >= 0) label(g, o.verdict === GREEN ? 'PASS' : 'FAIL', o.cx + 46, o.cy - 20, { color: o.verdict === GREEN ? col('green') : col('red'), weight: 600, alpha: a })
+      if (a > 0.02 && o.verdict >= 0) {
+        label(g, `h${o.id}`, o.cx + 24, o.cy - 22, { color: col('ink'), weight: 600, alpha: a })
+        label(g, o.verdict === GREEN ? 'PASS' : 'FAIL', o.cx + 24, o.cy - 9, { color: o.verdict === GREEN ? col('green') : col('red'), weight: 700, alpha: a })
       }
       if (o.child.on > 0) {
-        g.globalAlpha = 0.7 * o.child.on * mix; g.strokeStyle = col('acc'); g.lineWidth = 1
+        g.globalAlpha = 0.7 * o.child.on * mix; g.strokeStyle = col('green'); g.lineWidth = 1
         g.setLineDash([2, 4]); g.beginPath(); g.moveTo(o.cx, o.cy); g.lineTo(o.child.x, o.child.y); g.stroke(); g.setLineDash([])
-        label(g, `h${o.id}.1`, o.child.x + 30, o.child.y - 22, { color: col('green'), weight: 600, alpha: o.child.on * mix })
+        label(g, `h${o.id}.1`, o.child.x + 18, o.child.y - 12, { color: col('green'), weight: 600, alpha: o.child.on * mix })
       }
     }
+    g.globalAlpha = 1
+  },
+}
+
+/* ---------- Tangent trap: one idea sprouts ten tangents, nine die, memory rescues one. ---------- */
+const SURV = 6, DEAD_MEM = 2
+function tangentGeom(f: F) {
+  const root = [f.L + f.W * 0.06, f.T + f.H * 0.5]
+  const tips = Array.from({ length: 10 }, (_, k) => [
+    f.L + f.W * (k === SURV ? 0.94 : 0.5 + 0.3 * hash(k + 40)),
+    f.T + f.H * (0.06 + 0.88 * (k / 9)),
+  ])
+  return {
+    root, tips,
+    grow: ease(f.p / 0.32), die: ease((f.p - 0.36) / 0.18),
+    link: ease((f.p - 0.58) / 0.16), win: ease((f.p - 0.74) / 0.14),
+  }
+}
+const tangent: Beat = {
+  targets(ps, f) {
+    const { root, tips, grow, die, win } = tangentGeom(f)
+    const per = f.phone ? 10 : 18
+    let i = 0
+    for (let k = 0; k < 10; k++) {
+      const dead = k !== SURV
+      for (let j = 1; j <= per; j++) {
+        const p = ps[i++], t = j / per
+        const tip = tips[k]
+        const reach = dead ? 1 : 0.62 + 0.38 * win // the survivor only reaches its tip once memory rescues it
+        const x = root[0] + (tip[0] - root[0]) * t * reach, y = root[1] + (tip[1] - root[1]) * t * reach
+        const on = t <= grow
+        const c = dead ? (die > 0.05 ? CORAL : INDIGO) : win > 0.2 ? GREEN : INDIGO
+        const a = !on ? 0 : dead ? 1 - die * (t > 0.5 ? 0.45 : 0.25) : 1
+        set(p, x, y + (dead && die > 0 && t > 0.8 ? die * die * 40 * (t - 0.8) * 5 : 0), a, j === per ? 3.4 : 2, c)
+      }
+    }
+    for (let j = 0; j < 24; j++) {
+      const p = ps[i++]
+      set(p, root[0] + p.z * 8, root[1] + p.z2 * 8, 1, 2.4, INK)
+    }
+  },
+  over(g, f, mix) {
+    const { root, tips, grow, die, link, win } = tangentGeom(f)
+    label(g, 'ONE IDEA', root[0] - 4, root[1] - 26, { color: col('ink'), weight: 700, alpha: mix })
+    if (grow > 0.9) label(g, '10 TANGENTS', tips[0][0], tips[0][1] - 10, { color: col('muted'), alpha: mix * (1 - die) })
+    if (die > 0.3) tips.forEach((t, k) => { if (k !== SURV) label(g, '✕', t[0] + 10, t[1] + 4, { color: col('red'), weight: 700, size: 13, alpha: mix * die }) })
+    if (die > 0.6) label(g, '9 DEAD ENDS', tips[9][0], tips[9][1] + 26, { color: col('red'), weight: 700, alpha: mix * die })
+    if (link > 0.01) {
+      // Memory: the dead end that failed for a fixable reason links to the surviving tangent.
+      const a = tips[DEAD_MEM], b = [root[0] + (tips[SURV][0] - root[0]) * 0.62, root[1] + (tips[SURV][1] - root[1]) * 0.62]
+      g.globalAlpha = mix; g.strokeStyle = col('acc'); g.lineWidth = 1.2; g.setLineDash([3, 5])
+      g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(a[0] + (b[0] - a[0]) * link, a[1] + (b[1] - a[1]) * link); g.stroke(); g.setLineDash([])
+      label(g, 'MEMORY: DIED OF COSTS. FIX KNOWN.', (a[0] + b[0]) / 2 + 12, (a[1] + b[1]) / 2, { color: col('acc'), weight: 600, alpha: mix * link })
+    }
+    if (win > 0.3) label(g, 'h47 · PASS', tips[SURV][0], tips[SURV][1] - 14, { align: 'right', color: col('green'), weight: 700, alpha: mix * win })
     g.globalAlpha = 1
   },
 }
@@ -313,26 +407,41 @@ const paper: Beat = {
   },
 }
 
-/* ---------- Loop: one bright agent travels the ring of stages. ---------- */
+/* ---------- Loop: a stepped mechanism, like a station clock's second hand.
+   The agent dwells at a stage, then snaps to the next with a back-out overshoot. Never drifts. ---------- */
 const STAGE_NAMES = ['propose', 'freeze spec', 'code', 'verify', 'gate', 'sign-off', 'paper', 'decay watch', 'retire', 'fork']
+const GATE_STAGE = 4
+const snapState = { at: 0, from: 0, to: 0, t0: -10 }
+const backOut = (x: number, s: number) => 1 + (s + 1) * Math.pow(x - 1, 3) + s * Math.pow(x - 1, 2)
 function loopGeom(f: F) {
   const cx = f.L + f.W / 2, cy = f.T + f.H / 2, R = Math.min(f.W, f.H) * (f.phone ? 0.36 : 0.38)
-  const pos = clamp(f.p / 0.95) * 10
-  return { cx, cy, R, pos, active: Math.min(9, Math.floor(pos)) }
+  const active = loopState.station
+  if (active !== snapState.to) { snapState.from = snapState.to; snapState.to = active; snapState.t0 = f.t }
+  const dur = active === GATE_STAGE ? 0.28 : 0.2
+  const k = f.reduce ? 1 : clamp((f.t - snapState.t0) / dur)
+  // Always travel forward around the ring, wrapping from fork back to propose.
+  const span = ((snapState.to - snapState.from) % 10 + 10) % 10
+  const pos = snapState.from + span * (k >= 1 ? 1 : backOut(k, active === GATE_STAGE ? 2.6 : 1.7))
+  const since = f.reduce ? 1 : f.t - snapState.t0 - dur
+  return { cx, cy, R, pos, active, since }
 }
+const ang = (k: number) => -Math.PI / 2 + (k / 10) * Math.PI * 2
 const loop: Beat = {
   targets(ps, f) {
-    const { cx, cy, R, pos, active } = loopGeom(f)
+    const { cx, cy, R, pos, active, since } = loopGeom(f)
     const per = f.phone ? 8 : 16, ring = f.phone ? 70 : 160
     let i = 0
-    const trav = ps[i++], ang = -Math.PI / 2 + (pos / 10) * Math.PI * 2
-    set(trav, cx + Math.cos(ang) * R, cy + Math.sin(ang) * R, 1, 6, INK); trav.snap = !f.reduce
+    const trav = ps[i++], a0 = ang(pos)
+    set(trav, cx + Math.cos(a0) * R, cy + Math.sin(a0) * R, 1, active === GATE_STAGE ? 8 : 6, INK); trav.snap = true
+    // Arrival punch: the station's cluster contracts hard, then breathes back out.
+    const punch = since >= 0 && since < 0.3 ? 1 - since / 0.3 : 0
     for (let k = 0; k < 10; k++) {
-      const a = -Math.PI / 2 + (k / 10) * Math.PI * 2, lit = k <= active, now = k === active
-      const sig = now ? 11 + 2 * Math.sin(f.t * 4) : 6
+      const a = ang(k), now = k === active
+      const sig = now ? 11 - 8 * punch * (k === GATE_STAGE ? 1.2 : 1) : 6
       for (let j = 0; j < per; j++) {
         const p = ps[i++]
-        set(p, cx + Math.cos(a) * R + p.z * sig, cy + Math.sin(a) * R + p.z2 * sig, lit ? 1 : 0.6, now ? 2.8 : 2.1, lit ? INDIGO : PERI)
+        set(p, cx + Math.cos(a) * R + p.z * sig, cy + Math.sin(a) * R + p.z2 * sig, now ? 1 : 0.55, now ? 2.8 + punch * 1.5 : 2.1, now ? INK : INDIGO)
+        if (now) p.snap = true
       }
     }
     for (let j = 0; j < ring; j++) {
@@ -340,15 +449,31 @@ const loop: Beat = {
       set(p, cx + Math.cos(a) * R, cy + Math.sin(a) * R, 0.9, 1.3, LAV)
     }
   },
+  under(g, f, mix) {
+    const { cx, cy, R, active, since } = loopGeom(f)
+    // A tick on the ring for every stage reached; the newest one draws in.
+    for (let k = 0; k <= active; k++) {
+      const a = ang(k), len = k === active ? 14 * clamp((since + 0.2) / 0.15) : 10
+      g.globalAlpha = (k === active ? 1 : 0.5) * mix; g.strokeStyle = k === GATE_STAGE ? col('red') : col('acc'); g.lineWidth = k === active ? 3 : 2
+      g.beginPath(); g.moveTo(cx + Math.cos(a) * (R - len), cy + Math.sin(a) * (R - len)); g.lineTo(cx + Math.cos(a) * (R - 2), cy + Math.sin(a) * (R - 2)); g.stroke()
+    }
+    g.globalAlpha = 1
+  },
   over(g, f, mix) {
-    const { cx, cy, R, active } = loopGeom(f)
+    const { cx, cy, R, active, since } = loopGeom(f)
     STAGE_NAMES.forEach((name, k) => {
-      const a = -Math.PI / 2 + (k / 10) * Math.PI * 2, c = Math.cos(a), s = Math.sin(a)
-      const now = k === active
-      label(g, name, cx + c * (R + 28), cy + s * (R + 28) + 4, {
+      const a = ang(k), c = Math.cos(a), s = Math.sin(a)
+      const now = k === active, flash = now && since >= 0 && since < 0.25
+      label(g, now ? name.toUpperCase() : name, cx + c * (R + 28), cy + s * (R + 28) + 4, {
         align: Math.abs(c) < 0.2 ? 'center' : c > 0 ? 'left' : 'right',
-        color: now ? col('ink') : col('muted'), weight: now ? 600 : 500, size: f.phone ? 11 : 13, alpha: mix,
+        color: now ? (flash ? col('field') : col('ink')) : col('muted'), weight: now ? 700 : 500, size: f.phone ? 11 : 13, alpha: (now ? 1 : 0.6) * mix,
       })
+      if (flash) {
+        g.globalAlpha = mix; g.fillStyle = col('ink')
+        const w = g.measureText(name.toUpperCase()).width + 10, x = cx + c * (R + 28), al = Math.abs(c) < 0.2 ? x - w / 2 : c > 0 ? x - 5 : x - w + 5
+        g.fillRect(al, cy + s * (R + 28) - 10, w, 18)
+        label(g, name.toUpperCase(), cx + c * (R + 28), cy + s * (R + 28) + 4, { align: Math.abs(c) < 0.2 ? 'center' : c > 0 ? 'left' : 'right', color: col('field'), weight: 700, size: f.phone ? 11 : 13, alpha: mix })
+      }
     })
   },
 }
@@ -513,7 +638,7 @@ const footer: Beat = {
   },
 }
 
-const BEATS: Record<string, Beat> = { hero, cheap, worse, ours, solution, paper, loop, gate: gateBeat, forks, decay, footer }
+const BEATS: Record<string, Beat> = { hero, tangent, cheap, worse, ours, solution, paper, loop, gate: gateBeat, forks, decay, footer }
 
 export function start(canvas: HTMLCanvasElement) {
   const g = canvas.getContext('2d')!
