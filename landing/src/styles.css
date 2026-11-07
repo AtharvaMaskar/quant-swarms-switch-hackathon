@@ -700,3 +700,18 @@ html.has-cursor, html.has-cursor * { cursor: none !important; }
   .annos b { font: 700 0.6875rem var(--mono); text-transform: uppercase; letter-spacing: 0.05em; }
   .annos em { grid-column: 2; color: var(--ink); font-size: 0.875rem; }
 }
+
+/* Real-run app frame */
+.real-tag { color: var(--lav); margin-bottom: 14px; }
+.app-title .chip { margin-left: 10px; }
+.chip.fix { background: var(--ink); color: var(--lav); border-color: var(--ink); margin: 0 6px 0 0; }
+.refused { color: #C8231A; }
+.accepted { color: var(--green); font-weight: 700; }
+.patches { display: flex; align-items: center; gap: 6px; margin: 2px 0 0 40px; }
+.patches .mlabel { margin: 0 6px 0 0; color: #6E6C66; }
+.patches i { width: 26px; height: 10px; border: 1px solid var(--ink); }
+.patches i.on { background: var(--electric); border-color: var(--electric); }
+.patches b { font: 700 0.75rem var(--mono); margin-left: 6px; }
+.js .app.in .thread > :nth-child(8) { animation-delay: 1.76s; } .js .app.in .thread > :nth-child(9) { animation-delay: 1.9s; }
+.app-body { height: auto; min-height: 600px; }
+@media (max-width: 900px) { .app-title .chip { display: none; } .patches { margin-left: 0; } }

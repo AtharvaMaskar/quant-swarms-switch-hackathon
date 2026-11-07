@@ -4,7 +4,7 @@ import { useInView, useTyping } from './hooks.ts'
 import { expectedMaxSharpe } from './stats.ts'
 import { Assemble, Odometer } from './fx.tsx'
 
-const LINKS = [['Problem', 'problem'], ['Loop', 'loop'], ['Gate', 'gate'], ['Rooms', 'rooms'], ['FAQ', 'faq']] as const
+const LINKS = [['Problem', 'problem'], ['Loop', 'loop'], ['Gate', 'gate'], ['Threads', 'rooms'], ['FAQ', 'faq']] as const
 
 export function Nav() {
   const [active, setActive] = useState('')
@@ -39,93 +39,103 @@ const Icon = ({ d, label }: { d: keyof typeof I; label: string }) => (
   </button>
 )
 
+// The app frame shows a REAL run (7 Nov 2026, #deflate-control on Slack), lightly trimmed.
+// One channel; every hypothesis or paper is a thread in it.
 const RAIL = [
-  { id: 'control', name: 'control-room', meta: '7 OPEN' },
-  { id: 'lit', name: 'lit-arxiv-2611-03424', meta: 'READING' },
-  { id: 'h12', name: 'h12-expiry-mom', meta: 'V2 V3 V4 V5', lineage: 'h12' },
-  { id: 'h12.1', name: 'h12.1-expiry-mom-banks', meta: 'FORK OF H12', lineage: 'h12' },
-  { id: 'h7.3', name: 'h7.3-overnight-drift', meta: 'PAPER', live: true },
+  { id: 'h2', name: '🧪 h2 · vix-gated-drift', meta: 'PATCH 1/4' },
+  { id: 'paper', name: '📄 arxiv-2103-09692 · Radical Complexity', meta: 'READER BRAINSTORMING' },
+  { id: 'h1', name: '🧪 h1 · late-day-momentum', meta: 'PROPOSED' },
 ]
 
-/** The gate verdict as a printed, perforated receipt with a stamp. */
+/** The real gate verdict for h2, as a printed, perforated receipt with a stamp. */
 export function Receipt({ compact = false }: { compact?: boolean }) {
   return (
     <div className={`receipt ${compact ? 'compact' : ''}`} data-ui data-pop data-tilt>
-      <p className="r-head"><span>GATE VERDICT</span><span>h12v5</span></p>
-      <p className="r-sub">deterministic · no model in the loop</p>
+      <p className="r-head"><span>GATE FAIL</span><span>h2</span></p>
+      <p className="r-sub">11 of 15 checks failed · deterministic</p>
       <dl>
-        <div><dt>Deflated Sharpe</dt><dd>0.71 <i>/ 0.95</i></dd></div>
-        <div><dt>PBO</dt><dd>0.38</dd></div>
-        <div><dt>CPCV paths</dt><dd>9 <i>med SR 0.42</i></dd></div>
-        <div><dt>Family trials</dt><dd>41</dd></div>
-        <div><dt>Patches</dt><dd>4 / 4</dd></div>
+        <div><dt>Deflated Sharpe</dt><dd>0.43 <i>/ 0.95</i></dd></div>
+        <div><dt>PSR</dt><dd>0.49</dd></div>
+        <div><dt>PBO</dt><dd>0.87</dd></div>
+        <div><dt>CPCV</dt><dd>N=12 <i>median SR −0.50</i></dd></div>
+        <div><dt>Return on costs</dt><dd>0.97× <i>needs 3×</i></dd></div>
+        <div><dt>Bets · net</dt><dd>343 <i>−₹0.3L</i></dd></div>
       </dl>
-      <p className="r-foot">HARD STOP · ILLUSTRATIVE NUMBERS</p>
+      <p className="r-foot">REAL RUN · 7 NOV 2026</p>
       <span className="stamp fail" aria-label="Fail">FAIL</span>
     </div>
   )
 }
 
+function Patches({ used, of }: { used: number; of: number }) {
+  return (
+    <div className="patches" aria-label={`Patch ${used} of ${of}`}>
+      <span className="mlabel">PATCHES</span>
+      {Array.from({ length: of }, (_, i) => <i key={i} className={i < used ? 'on' : ''} />)}
+      <b className="tab">{used} / {of}</b>
+    </div>
+  )
+}
+
 function App() {
-  const [hover, setHover] = useState<string | null>(null)
   return (
     <div className="app" data-ui data-pop>
       <div className="app-bar">
-        <span className="app-title"><span className="dim">Switch /</span> #h12-expiry-mom</span>
-        <span className="app-icons"><Icon d="fork" label="Fork room" /><Icon d="collapse" label="Collapse" /><Icon d="share" label="Share" /><Icon d="panel" label="Panel" /><Icon d="more" label="More" /></span>
+        <span className="app-title"><span className="dim">Switch /</span> #deflate-control <span className="chip">1 CHANNEL · THREADS PER HYPOTHESIS</span></span>
+        <span className="app-icons"><Icon d="fork" label="Fork" /><Icon d="collapse" label="Collapse" /><Icon d="share" label="Share" /><Icon d="panel" label="Panel" /><Icon d="more" label="More" /></span>
       </div>
       <div className="app-body">
         <aside className="rail">
-          <p className="mlabel">ROOMS</p>
+          <p className="mlabel">THREADS</p>
           <ul>
             {RAIL.map((r, i) => (
-              <li key={r.id} style={{ '--i': i } as React.CSSProperties} onMouseEnter={() => setHover(r.lineage ?? null)} onMouseLeave={() => setHover(null)}
-                className={`${r.id === 'h12' ? 'cur' : ''} ${hover && r.lineage === hover ? 'glow' : ''}`}>
-                <span className="rn"># {r.name}</span><span className={`rm ${r.live ? 'live' : ''}`}>{r.meta}</span>
+              <li key={r.id} style={{ '--i': i } as React.CSSProperties} className={r.id === 'h2' ? 'cur' : ''}>
+                <span className="rn">{r.name}</span><span className="rm">{r.meta}</span>
               </li>
             ))}
           </ul>
         </aside>
         <div className="thread">
-          <Msg who="proposer" kind="agent" time="09:12">h12: weekly-expiry momentum in NIFTY bank options. Hypothesis and spec attached. <span className="chip">SPEC FROZEN 9f3c</span></Msg>
-          <Msg who="coder" kind="agent" time="09:41">h12v5 ready. Patch 4 of 4: the exit leg now pays STT and slippage.</Msg>
-          <Msg who="verifier" kind="agent" time="09:44">Look-ahead probe clean. Costs file dated 2026-04-01 applied.</Msg>
-          <div className="msg"><span className="av code">G</span><div><p className="who">gate <span className="time">09:45</span></p><div className="receipt-wrap"><Receipt compact /></div></div></div>
-          <Msg who="proposer" kind="agent" time="09:46">Proposing fork h12.1 in a new room: banks only, inherits all 41 trials.</Msg>
-          <Msg who="risk owner" kind="human" time="09:52">Approved. Open h12.1. <span className="chip ok">SIGNED OFF</span></Msg>
-          <div className="msg skeleton" aria-label="coder is drafting the h12.1 spec"><span className="av agent" /><div className="sk"><i /><i /><i /></div></div>
-          <div className="composer"><span>Message #h12-expiry-mom</span><kbd>@</kbd></div>
+          <Msg who="orchestrator" kind="agent">🧪 h2 · vix-gated-drift: research thread for h2</Msg>
+          <Msg who="coder" kind="agent">spec written: the buy-and-hold reference plus one gate, long at 09:21 only when yesterday’s VIX close is above p.vthr <span className="chip">deflate freeze h2 specs/h2.yaml</span></Msg>
+          <Msg who="orchestrator" kind="agent">spec frozen · sha 2cee9836 · schema ok</Msg>
+          <Msg who="verifier" kind="agent">spec matches card</Msg>
+          <div className="msg"><span className="av code">G</span><div><p className="who">gate</p><div className="receipt-wrap"><Receipt compact /></div></div></div>
+          <Msg who="coder" kind="agent">patch 1/4 → h2v2: VIX above its own 250-day median instead of a fixed 14</Msg>
+          <Msg who="orchestrator" kind="agent"><span className="refused">freeze refused: a patch must change exactly one rule; h2v2 changes 7 fields</span></Msg>
+          <Msg who="orchestrator" kind="agent"><span className="chip fix">AFTER FIX</span> rule-level check: 1 rule changed (entry.long) · <span className="accepted">accepted</span></Msg>
+          <Patches used={1} of={4} />
         </div>
       </div>
     </div>
   )
 }
 
-function Msg({ who, kind, time, children }: { who: string; kind: 'agent' | 'human'; time: string; children: React.ReactNode }) {
+function Msg({ who, kind, time, children }: { who: string; kind: 'agent' | 'human'; time?: string; children: React.ReactNode }) {
   return (
     <div className="msg">
       <span className={`av ${kind}`}>{who[0].toUpperCase()}</span>
-      <div><p className="who">{kind === 'agent' ? '@' : ''}{who} <span className="time">{time}</span></p><p>{children}</p></div>
+      <div><p className="who">{kind === 'agent' ? '@' : ''}{who} {time && <span className="time">{time}</span>}</p><p>{children}</p></div>
     </div>
   )
 }
 
 const TERM = [
-  '> deflate // gate h12v5',
+  '> deflate // gate h2',
   'Status   : Connected (switch agent stream)',
-  'Trials   : 41 in family · N_eff 9.3',
-  'CPCV     : 9 paths · median SR 0.42',
-  'Verdict  : FAIL (DSR 0.71 < 0.95) → hard stop 4/4',
-  '> fork h12.1',
-  'Gate     : PASS h12.1 · DSR 0.97 → paper (illustrative)',
+  'Trials   : 1 in family · N_eff 1.7',
+  'CPCV     : N=12 · median SR −0.50',
+  'Verdict  : FAIL (DSR 0.43 < 0.95) → patch 1/4',
+  '> deflate freeze h2v2',
+  'Freeze   : accepted · 1 rule changed (entry.long)',
 ]
 function Terminal() {
   const [ref, seen] = useInView<HTMLDivElement>(0.5)
   const typed = useTyping(TERM, seen)
   return (
     <div className="term" ref={ref} data-ui aria-label={TERM.join('. ')}>
-      <div className="term-bar"><i /><i /><i /><span>deflate — zsh — 120×8</span></div>
-      <pre aria-hidden="true">{typed.map((l, i) => l && <span key={i} className={l.startsWith('>') ? 'cmd' : l.startsWith('Verdict') ? 'bad' : l.startsWith('Gate') && l.length === TERM[6].length ? 'ok' : ''}>{l}{'\n'}</span>)}<span className="caret" /></pre>
+      <div className="term-bar"><i /><i /><i /><span>deflate — real run · 7 Nov 2026</span></div>
+      <pre aria-hidden="true">{typed.map((l, i) => l && <span key={i} className={l.startsWith('>') ? 'cmd' : l.startsWith('Verdict') ? 'bad' : l.startsWith('Freeze') && l.length === TERM[6].length ? 'ok' : ''}>{l}{'\n'}</span>)}<span className="caret" /></pre>
     </div>
   )
 }
@@ -145,7 +155,7 @@ function useStat(): Stat {
 function Board() {
   return (
     <div className="led" data-ui data-pop>
-      <div className="led-bar"><span><b className="live-dot" /> SWARM · LIVE</span><span>EACH CLUSTER IS A ROOM, PLOTTED AT ITS BACKTEST SHARPE</span></div>
+      <div className="led-bar"><span><b className="live-dot" /> ILLUSTRATIVE SWARM</span><span>EACH CLUSTER IS A HYPOTHESIS, PLOTTED AT ITS BACKTEST SHARPE</span></div>
       <div className="led-stage" data-stage aria-hidden="true" />
       <div className="led-foot"><span>■ TESTING</span><span className="g">■ ABOVE LUCK → PASS, FORKS</span><span className="r">■ BELOW LUCK → FAIL, DROPS</span></div>
     </div>
@@ -155,13 +165,13 @@ function Board() {
 /** Four hard-ruled cells under the hero, live from the board. */
 function StatBar({ stat }: { stat: Stat }) {
   const cells: [string, string, string][] = [
-    ['TRIALS', String(stat.trials).padStart(3, '0'), 'every attempt, forks included'],
+    ['TRIALS', String(stat.trials).padStart(3, '0'), 'illustrative swarm · forks included'],
     ['LUCK ALONE', stat.luck.toFixed(2), 'σ · E[max SR] of zero-skill trials'],
     ['PASS RATE', `${stat.passes}/${stat.trials}`, 'rooms that beat luck'],
     ['FAMILIES', String(stat.roots).padStart(2, '0'), 'hypotheses, before forks'],
   ]
   return (
-    <div className="statbar layer" aria-label="Live hero board statistics">
+    <div className="statbar layer" aria-label="Illustrative swarm statistics">
       {cells.map(([k, v, d]) => (
         <div key={k} className="cell"><span className="mlabel">{k}</span><b className="tab"><Odometer value={v} /></b><span className="cd">{d}</span></div>
       ))}
@@ -219,7 +229,7 @@ export function Hero() {
         <div className="hero-right layer"><Board /></div>
       </div>
       <StatBar stat={stat} />
-      <div className="hero-app layer" data-reveal><App /><Terminal /></div>
+      <div className="hero-app layer" data-reveal><p className="mlabel real-tag">REAL RUN · 7 NOV 2026 · #DEFLATE-CONTROL ON SLACK</p><App /><Terminal /></div>
     </header>
   )
 }

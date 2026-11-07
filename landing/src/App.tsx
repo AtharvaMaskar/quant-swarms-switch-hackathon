@@ -236,7 +236,7 @@ function Forks() {
   const ref = useRef<HTMLElement>(null), p = useBeat(ref)
   return (
     <Pin beat="forks" id="rooms" p={ref} vh={200} flip theme="dark">
-      <Label n="09">Rooms and forks</Label>
+      <Label n="09">Threads and forks</Label>
       <Mask lines={['Forks inherit', 'the count.']} />
       <div className="huge-num grad" data-reveal><b className="tab">41</b><span>TRIALS h12.1 IS CHARGED WITH. NEVER 1.</span></div>
       <table className="lineage" data-reveal>

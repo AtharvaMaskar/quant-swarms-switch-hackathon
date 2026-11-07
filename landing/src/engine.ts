@@ -325,9 +325,9 @@ const ours: Beat = {
 
 /* ---------- Solution: rooms in Switch, linked by lineage. ---------- */
 const ROOMS = [
-  { id: 'control', x: 0.22, y: 0.0, w: 0.56, h: 0.2, label: 'control room', sub: 'watches the whole floor', at: 0, c: PERI },
-  { id: 'h12', x: 0.0, y: 0.38, w: 0.42, h: 0.2, label: '#h12', sub: 'hypothesis room', at: 0.12, c: INDIGO },
-  { id: 'h7', x: 0.0, y: 0.76, w: 0.42, h: 0.2, label: '#h7', sub: 'hypothesis room', at: 0.28, c: INDIGO },
+  { id: 'control', x: 0.22, y: 0.0, w: 0.56, h: 0.2, label: 'control channel', sub: 'watches the whole floor', at: 0, c: PERI },
+  { id: 'h12', x: 0.0, y: 0.38, w: 0.42, h: 0.2, label: '#h12', sub: 'thread', at: 0.12, c: INDIGO },
+  { id: 'h7', x: 0.0, y: 0.76, w: 0.42, h: 0.2, label: '#h7', sub: 'thread', at: 0.28, c: INDIGO },
   { id: 'h12.1', x: 0.58, y: 0.38, w: 0.42, h: 0.2, label: '#h12.1', sub: 'fork · 41 trials', at: 0.44, c: INDIGO },
   { id: 'h12.1.2', x: 0.58, y: 0.76, w: 0.42, h: 0.2, label: '#h12.1.2', sub: 'fork · count carries', at: 0.6, c: INDIGO },
 ]
@@ -430,7 +430,7 @@ const paper: Beat = {
     if (pa > 0.01) {
       g.globalAlpha = pa; g.fillStyle = col('field'); g.beginPath(); g.rect(page.x, page.y, page.w, page.h); g.fill()
       g.globalAlpha = 0.9 * pa; g.strokeStyle = col('ink'); g.stroke()
-      label(g, 'arXiv 2611.03424', page.x + 16, page.y + 26, { color: col('ink'), weight: 600, alpha: pa })
+      label(g, 'arXiv 2103.09692', page.x + 16, page.y + 26, { color: col('ink'), weight: 600, alpha: pa })
       label(g, 'Abstract', page.x + 16, page.y + 44, { size: 11, alpha: pa })
     }
     if (memory > 0.01) MEMORY.forEach(m => {
@@ -444,9 +444,9 @@ const paper: Beat = {
       g.globalAlpha = 0.9 * born * mix; g.strokeStyle = col('ink'); g.stroke()
       g.globalAlpha = 0.8 * born * mix; g.strokeStyle = col('acc'); g.lineWidth = 2
       g.beginPath(); g.moveTo(lit[0], lit[1] + 30); g.lineTo(room.x + room.w / 2, room.y); g.stroke()
-      label(g, f.phone ? '#h43 · from the paper' : '#h43 · strategy card from arXiv 2611.03424', room.x + 16, room.y + 22, { color: col('ink'), weight: 600, size: 13, alpha: born * mix })
+      label(g, f.phone ? '#h43 · from the paper' : 'h43 · strategy card from arXiv 2103.09692', room.x + 16, room.y + 22, { color: col('ink'), weight: 600, size: 13, alpha: born * mix })
     }
-    if (dissolve > 0.3) label(g, '#lit-arxiv-2611-03424', lit[0], lit[1] - 62, { align: 'center', color: col('ink'), weight: 600, size: 13, alpha: ease((dissolve - 0.3) / 0.4) * mix })
+    if (dissolve > 0.3) label(g, 'paper thread · arxiv-2103-09692', lit[0], lit[1] - 62, { align: 'center', color: col('ink'), weight: 600, size: 13, alpha: ease((dissolve - 0.3) / 0.4) * mix })
     g.globalAlpha = 1
   },
 }
