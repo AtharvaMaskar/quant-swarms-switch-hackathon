@@ -135,17 +135,28 @@ const hero: Beat = {
   },
   over(g, f, mix) {
     const luck = expectedMaxSharpe(trialsAt(f.t).trials)
+    const R = Math.min(f.W, f.H) * (f.phone ? 0.04 : 0.032) * 2.4 // cluster radius (~2.4σ of its spread)
+    // Greedy label placement: up and right of each cluster's box, with a 1px leader; never on top of another label.
+    const placed: [number, number, number, number][] = []
+    const free = (x: number, y: number, w: number, h: number) => placed.every(([a, b, c, d]) => x + w < a || x > a + c || y + h < b || y > b + d)
+    const tag = (cx: number, cy: number, line1: string, line2: string, c2: string, alpha: number) => {
+      const w = Math.max(line1.length, line2.length) * 7 + 6, h = line2 ? 28 : 15
+      let x = cx + R * 0.8, y = cy - R - h - 6
+      for (let k = 0; k < 6 && !free(x, y, w, h); k++) { y -= h + 4; if (k === 2) { x = cx - R * 0.8 - w; y = cy - R - h - 6 } }
+      placed.push([x, y, w, h])
+      g.globalAlpha = 0.6 * alpha; g.strokeStyle = col('acc'); g.lineWidth = 1
+      g.beginPath(); g.moveTo(cx + Math.sign(x - cx) * R * 0.55, cy - R * 0.55); g.lineTo(x < cx ? x + w : x, y + h); g.stroke()
+      label(g, line1, x + 3, y + 11, { color: col('ink'), weight: 600, alpha })
+      if (line2) label(g, line2, x + 3, y + 25, { color: c2, weight: 700, alpha })
+    }
     for (let s = 0; s < SLOTS; s++) {
       const o = slot(s, f.t, f, luck)
       const a = Math.min(o.life, clamp(1 - o.drop / 60)) * mix
-      if (a > 0.02 && o.verdict >= 0) {
-        label(g, `h${o.id}`, o.cx + 24, o.cy - 22, { color: col('ink'), weight: 600, alpha: a })
-        label(g, o.verdict === GREEN ? 'PASS' : 'FAIL', o.cx + 24, o.cy - 9, { color: o.verdict === GREEN ? col('green') : col('red'), weight: 700, alpha: a })
-      }
+      if (a > 0.02 && o.verdict >= 0) tag(o.cx, o.cy, `h${o.id}`, o.verdict === GREEN ? 'PASS' : 'FAIL', o.verdict === GREEN ? col('green') : col('red'), a)
       if (o.child.on > 0) {
         g.globalAlpha = 0.7 * o.child.on * mix; g.strokeStyle = col('green'); g.lineWidth = 1
         g.setLineDash([2, 4]); g.beginPath(); g.moveTo(o.cx, o.cy); g.lineTo(o.child.x, o.child.y); g.stroke(); g.setLineDash([])
-        label(g, `h${o.id}.1`, o.child.x + 18, o.child.y - 12, { color: col('green'), weight: 600, alpha: o.child.on * mix })
+        tag(o.child.x, o.child.y, `h${o.id}.1`, 'FORK', col('green'), o.child.on * mix)
       }
     }
     g.globalAlpha = 1
@@ -189,20 +200,53 @@ const tangent: Beat = {
       set(p, root[0] + p.z * 8, root[1] + p.z2 * 8, 1, 2.4, INK)
     }
   },
+  under(g, f, mix) {
+    // The tree: every tangent is a visible dotted line from the one idea.
+    const { root, tips, grow, die, win } = tangentGeom(f)
+    tips.forEach((t, k) => {
+      const dead = k !== SURV, reach = (dead ? 1 : 0.62 + 0.38 * win) * grow
+      g.globalAlpha = (dead && die > 0.05 ? 0.35 : 0.5) * mix
+      g.strokeStyle = dead && die > 0.05 ? col('red') : k === SURV && win > 0.2 ? col('green') : col('acc')
+      g.lineWidth = 1; g.setLineDash([2, 4])
+      g.beginPath(); g.moveTo(root[0], root[1]); g.lineTo(root[0] + (t[0] - root[0]) * reach, root[1] + (t[1] - root[1]) * reach); g.stroke()
+    })
+    g.setLineDash([]); g.globalAlpha = 1
+  },
   over(g, f, mix) {
     const { root, tips, grow, die, link, win } = tangentGeom(f)
     label(g, 'ONE IDEA', root[0] - 4, root[1] - 26, { color: col('ink'), weight: 700, alpha: mix })
-    if (grow > 0.9) label(g, '10 TANGENTS', tips[0][0], tips[0][1] - 10, { color: col('muted'), alpha: mix * (1 - die) })
     if (die > 0.3) tips.forEach((t, k) => { if (k !== SURV) label(g, '✕', t[0] + 10, t[1] + 4, { color: col('red'), weight: 700, size: 13, alpha: mix * die }) })
-    if (die > 0.6) label(g, '9 DEAD ENDS', tips[9][0], tips[9][1] + 26, { color: col('red'), weight: 700, alpha: mix * die })
+    const mid = [root[0] + (tips[SURV][0] - root[0]) * 0.62, root[1] + (tips[SURV][1] - root[1]) * 0.62]
     if (link > 0.01) {
-      // Memory: the dead end that failed for a fixable reason links to the surviving tangent.
-      const a = tips[DEAD_MEM], b = [root[0] + (tips[SURV][0] - root[0]) * 0.62, root[1] + (tips[SURV][1] - root[1]) * 0.62]
-      g.globalAlpha = mix; g.strokeStyle = col('acc'); g.lineWidth = 1.2; g.setLineDash([3, 5])
-      g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(a[0] + (b[0] - a[0]) * link, a[1] + (b[1] - a[1]) * link); g.stroke(); g.setLineDash([])
-      label(g, 'MEMORY: DIED OF COSTS. FIX KNOWN.', (a[0] + b[0]) / 2 + 12, (a[1] + b[1]) / 2, { color: col('acc'), weight: 600, alpha: mix * link })
+      const a = tips[DEAD_MEM]
+      g.globalAlpha = mix; g.strokeStyle = col('acc'); g.lineWidth = 1.5; g.setLineDash([5, 4])
+      g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(a[0] + (mid[0] - a[0]) * link, a[1] + (mid[1] - a[1]) * link); g.stroke(); g.setLineDash([])
     }
-    if (win > 0.3) label(g, 'h47 · PASS', tips[SURV][0], tips[SURV][1] - 14, { align: 'right', color: col('green'), weight: 700, alpha: mix * win })
+    if (f.phone) { g.globalAlpha = 1; return } // on phones the annotations are a list under the figure
+    const L = f.L, T = f.T, W = f.W, H = f.H
+    const lead = (x: number, y: number, bx: number, by: number, a: number) => {
+      g.globalAlpha = 0.7 * a; g.strokeStyle = col('ink'); g.lineWidth = 1
+      g.beginPath(); g.moveTo(x, y); g.lineTo(bx, by); g.stroke()
+      g.fillStyle = col('ink'); g.fillRect(x - 2, y - 2, 4, 4)
+    }
+    const note = (bx: number, by: number, title: string, lines: string[], color: string, a: number) => {
+      if (a <= 0.01) return
+      label(g, title, bx, by, { color, weight: 700, size: 11, alpha: a })
+      g.font = 'italic 400 16px "Instrument Serif", Georgia, serif'; g.fillStyle = col('ink'); g.textAlign = 'left'; g.globalAlpha = a
+      lines.forEach((l, i) => g.fillText(l, bx, by + 20 + i * 18))
+      g.globalAlpha = 1
+    }
+    const a1 = mix * clamp((grow - 0.75) / 0.25)
+    const p1 = [root[0] + (tips[1][0] - root[0]) * 0.45, root[1] + (tips[1][1] - root[1]) * 0.45]
+    if (a1 > 0.01) { lead(p1[0], p1[1], L + W * 0.13, T + H * 0.04 + 66, a1); note(L + W * 0.13, T + H * 0.04, '10 TANGENTS', ['a paper that might apply', 'a filter that might fix last quarter', 'a signal from another market'], col('acc'), a1) }
+    const a2 = mix * clamp((die - 0.5) / 0.5)
+    if (a2 > 0.01) { lead(tips[9][0], tips[9][1], L + W * 0.2, T + H * 0.9, a2); note(L + W * 0.03, T + H * 0.88, '9 DEAD ENDS · MONTHS LOST', [], col('red'), a2) }
+    const a3 = mix * clamp((link - 0.5) / 0.5)
+    const lm = [(tips[DEAD_MEM][0] + mid[0]) / 2, (tips[DEAD_MEM][1] + mid[1]) / 2]
+    if (a3 > 0.01) { lead(lm[0], lm[1], lm[0] + W * 0.08, lm[1] - 4, a3); note(lm[0] + W * 0.08 + 6, lm[1] - 8, 'RECALL', ['it already died once, of costs.', 'The fix is known.'], col('acc'), a3) }
+    const a4 = mix * clamp((win - 0.5) / 0.5)
+    const t4 = tips[SURV]
+    if (a4 > 0.01) { lead(t4[0], t4[1], t4[0] - 10, t4[1] + 40, a4); note(t4[0] - W * 0.2, t4[1] + 56, 'h47 · PASS', ['tested in days, not months'], col('green'), a4) }
     g.globalAlpha = 1
   },
 }

@@ -23,9 +23,9 @@ function Canvas() {
 }
 
 /** A scroll-pinned chapter: a poster of text on one side, the swarm's stage on the other. */
-function Pin({ beat, id, vh = 220, p, children, flip = false, theme }: { beat: string; id?: string; vh?: number; p: React.RefObject<HTMLElement | null>; children: React.ReactNode; flip?: boolean; theme: Theme }) {
+function Pin({ beat, id, vh = 220, p, children, flip = false, wide = false, theme }: { beat: string; id?: string; vh?: number; p: React.RefObject<HTMLElement | null>; children: React.ReactNode; flip?: boolean; wide?: boolean; theme: Theme }) {
   return (
-    <section className={`pin ${theme} dots ${flip ? 'flip' : ''}`} data-beat={beat} data-theme={theme} data-pin id={id} ref={p as React.RefObject<HTMLElement>} style={{ height: `${vh}vh` }}>
+    <section className={`pin ${theme} dots ${flip ? 'flip' : ''} ${wide ? 'wide' : ''}`} data-beat={beat} data-theme={theme} data-pin id={id} ref={p as React.RefObject<HTMLElement>} style={{ height: `${vh}vh` }}>
       <div className="sticky">
         {theme === 'dark' && <DitherBg />}
         <div className="pin-text layer">{children}</div>
@@ -35,19 +35,23 @@ function Pin({ beat, id, vh = 220, p, children, flip = false, theme }: { beat: s
   )
 }
 
+const TANGENT_NOTES = [
+  ['10 tangents', 'a paper that might apply · a filter that might fix last quarter · a signal from another market', 0],
+  ['9 dead ends · months lost', '', 0.36],
+  ['Recall', 'it already died once, of costs. The fix is known.', 0.58],
+  ['h47 · pass', 'tested in days, not months', 0.74],
+] as const
 function Tangent() {
   const ref = useRef<HTMLElement>(null), p = useBeat(ref)
-  const step = p < 0.36 ? 0 : p < 0.58 ? 1 : 2
   return (
-    <Pin beat="tangent" id="problem" p={ref} vh={240} theme="paper">
+    <Pin beat="tangent" id="problem" p={ref} vh={240} theme="paper" wide>
       <Label n="01">The tangent trap</Label>
       <p className="kicker" data-reveal><em>Every quant knows this week.</em></p>
       <Mask className="h-sm" lines={['One idea.', 'Ten tangents.', 'Nine dead ends.']} />
-      <div className="turns" data-reveal>
-        <p className={step === 0 ? 'on' : ''}>You start down one direction and come back with ten new ideas: a paper that might apply, a filter that might fix last quarter, a signal from a different market. Chase all ten and most end in dead ends. You lose months finding out.</p>
-        <p className={step === 1 ? 'on' : ''}>The idea that mattered was often already there: in a paper you read last year, or in a dead end that failed for a reason you could have fixed.</p>
-        <p className={step === 2 ? 'on' : ''}>AI is good at recall. It remembers every trial, every post-mortem, every paper you tagged, and connects them. {NAME} turns tangents into counted, tested trials in days, and remembers why each one died.</p>
-      </div>
+      <p className="lead-line" data-reveal>Chase all ten and you lose months finding out.</p>
+      <ol className="annos">
+        {TANGENT_NOTES.map(([t, d, at], i) => <li key={t} className={p >= at ? 'on' : ''}><b>{t}</b>{d && <em>{d}</em>}</li>)}
+      </ol>
     </Pin>
   )
 }
