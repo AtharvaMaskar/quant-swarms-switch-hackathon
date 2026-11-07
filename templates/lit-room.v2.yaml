@@ -44,11 +44,5 @@ resources:
         description: "The paper reference and, once read, the paper card for {lit_id}"
         instructions: The reader fills the paper card here. Keep the URL.
         content: "{url}"
-    references:
-      - type: github
-        name: "Deflate repo (lit {lit_id})"
-        description: The research repo (agents/reader.md, feature registry, memory CLI)
-        instructions: Read it. Do not push.
-        value: {urls: ["{repo_url}"]}
     # no kickoff: the orchestrator parses the paper into papers/{lit_id}/ first, then posts the
     # summary card and `@reader {lit_id} round {round}: read papers/...` itself (qs/orchestrator.py)

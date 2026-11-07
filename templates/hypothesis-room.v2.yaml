@@ -48,10 +48,4 @@ resources:
         description: "The proposer card for {hid} and, once frozen, its spec"
         instructions: Read before writing or checking the spec.
         content: "{spec_doc}"
-    references:
-      - type: github
-        name: "Deflate repo ({hid})"
-        description: The research repo (engine, gate, specs)
-        instructions: Read it. Write only specs/{hid}.yaml. Never run git.
-        value: {urls: ["{repo_url}"]}
     kickoff: "@{coder} {hid} round {round}: write specs/{hid}.yaml from the card (no git), then send the orchestrator: freeze {hid} specs/{hid}.yaml"

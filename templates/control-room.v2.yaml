@@ -32,10 +32,4 @@ resources:
       - name: judge
         exclusive: true
         instructions: Compare two cards on the criteria in your brief; reply with the JSON verdict. Never judge truth.
-    references:
-      - type: github
-        name: "Deflate repo (control {hid})"
-        description: The research repo (engine, gate, specs, briefs)
-        instructions: Read it. Do not push.
-        value: {urls: ["{repo_url}"]}
     kickoff: "@{proposer_card} @{proposer_lead} @{proposer_contrarian} {hid} round {round}: propose cards (next id {hid}), one propose command each, then @{judge} compares."
