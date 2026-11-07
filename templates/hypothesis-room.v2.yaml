@@ -33,7 +33,7 @@ resources:
     roles:
       - name: coder
         exclusive: true
-        instructions: Write specs/{hid}.yaml on branch hyp/{hid}, then freeze it. One-rule patches only.
+        instructions: Write specs/{hid}.yaml (no git), then freeze it. One-rule patches only.
       - name: verifier
         exclusive: true
         instructions: Check the frozen spec matches the card. Never edit the spec.
@@ -49,6 +49,6 @@ resources:
       - type: github
         name: "Deflate repo ({hid})"
         description: The research repo (engine, gate, specs)
-        instructions: Read it. Write only specs/{hid}.yaml on branch hyp/{hid}.
+        instructions: Read it. Write only specs/{hid}.yaml. Never run git.
         value: {urls: ["{repo_url}"]}
-    kickoff: "@{coder} {hid} round {round}: write specs/{hid}.yaml from the card on branch hyp/{hid}, then send the orchestrator: freeze {hid} specs/{hid}.yaml"
+    kickoff: "@{coder} {hid} round {round}: write specs/{hid}.yaml from the card (no git), then send the orchestrator: freeze {hid} specs/{hid}.yaml"

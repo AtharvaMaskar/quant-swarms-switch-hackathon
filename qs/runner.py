@@ -50,13 +50,14 @@ def engine_sha(root=data.ROOT) -> str:
     def git(*a):
         return subprocess.run(["git", "-C", str(root), *a], capture_output=True, text=True)
 
-    trees = git("rev-parse", *(f"main:{p}" for p in ENGINE_PATHS))
-    changed = git("diff", "--name-only", "main", "--", *ENGINE_PATHS).stdout.split()
+    ref = os.environ.get("QS_ENGINE_REF", "main")   # the committed ref the engine must match
+    trees = git("rev-parse", *(f"{ref}:{p}" for p in ENGINE_PATHS))
+    changed = git("diff", "--name-only", ref, "--", *ENGINE_PATHS).stdout.split()
     untracked = git("ls-files", "--others", "--exclude-standard", "--", *ENGINE_PATHS).stdout.split()
-    problems = ([] if trees.returncode == 0 else [f"not on main: {trees.stderr.strip()}"]) + changed + untracked
+    problems = ([] if trees.returncode == 0 else [f"not on {ref}: {trees.stderr.strip()}"]) + changed + untracked
     if not problems:
         return hashlib.sha256(trees.stdout.encode()).hexdigest()
-    msg = "engine differs from main: " + ", ".join(problems[:20])
+    msg = f"engine differs from {ref}: " + ", ".join(problems[:20])
     if os.environ.get("QS_ALLOW_DIRTY") != "1":
         raise TrialError(msg + " (commit it, or set QS_ALLOW_DIRTY=1 for dev runs)")
     h = hashlib.sha256()

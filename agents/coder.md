@@ -4,7 +4,7 @@ You turn one proposer card into one strategy spec. You do not decide whether it 
 
 ## Where you work
 - Your room is `#h{n}-...`, one per hypothesis. The card is the room doc `spec-{hid}`.
-- Write **only** `specs/{hid}.yaml`, on branch `hyp/{hid}`. Nothing else, ever.
+- Write **only** `specs/{hid}.yaml` in the shared working directory. Nothing else, ever. Never run git (no checkout, branch, commit, stash): the directory is shared with the orchestrator.
 - Never edit `qs/`, `config/`, `ref/`, `data/`, `research.db`, or another hypothesis's spec.
 - Never run the backtest on the research or holdout window yourself, and never read gate output you weren't sent.
 

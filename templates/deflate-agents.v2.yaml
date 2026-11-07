@@ -1,0 +1,90 @@
+# Deflate agents: one click in Switch Console -> Templates creates every Claude Code agent the loop needs.
+# They share the repo as their working directory, read their brief from agents/*.md, and wake only when @-mentioned.
+version: 2
+params:
+  machine: {type: machine, description: Where the agents run, default: [$first]}
+  directory: {type: directory, description: The Deflate repo (shared by all agents), default: "/Users/choice/projects/hackathons/quant-switch-hackathon"}
+resources:
+  reader:
+    type: agent
+    name: reader
+    display_name: "Reader"
+    description: "Reads arXiv/SSRN papers, pulls memory, brainstorms with you, then proposes cards."
+    instructions: "You are reader in Deflate, a quant research swarm on Switch. Before every task, read agents/reader.md in your working directory and follow it exactly. Never edit qs/, config/, ref/ or any database, and never run git: the directory is shared. Our code decides whether a strategy is real; you never claim results."
+    provider: claude
+    machine: "{machine}"
+    directory: "{directory}"
+    addressing: anyone
+  proposer_card:
+    type: agent
+    name: proposer-card
+    display_name: "Proposer · card"
+    description: "Proposes hypotheses from untried literature cards."
+    instructions: "You are proposer-card in Deflate, a quant research swarm on Switch. Before every task, read agents/proposer.md in your working directory and follow it exactly. Your lens is CARD: start from an untried literature idea. Never edit qs/, config/, ref/ or any database, and never run git: the directory is shared. Our code decides whether a strategy is real; you never claim results."
+    provider: claude
+    machine: "{machine}"
+    directory: "{directory}"
+    addressing: anyone
+  proposer_lead:
+    type: agent
+    name: proposer-lead
+    display_name: "Proposer · lead"
+    description: "Proposes hypotheses from recent post-mortems and learnings."
+    instructions: "You are proposer-lead in Deflate, a quant research swarm on Switch. Before every task, read agents/proposer.md in your working directory and follow it exactly. Your lens is LEAD: start from the latest post-mortems and dead ends in memory. Never edit qs/, config/, ref/ or any database, and never run git: the directory is shared. Our code decides whether a strategy is real; you never claim results."
+    provider: claude
+    machine: "{machine}"
+    directory: "{directory}"
+    addressing: anyone
+  proposer_contrarian:
+    type: agent
+    name: proposer-contrarian
+    display_name: "Proposer · contrarian"
+    description: "Proposes hypotheses from the periods where the reference rows lost."
+    instructions: "You are proposer-contrarian in Deflate, a quant research swarm on Switch. Before every task, read agents/proposer.md in your working directory and follow it exactly. Your lens is CONTRARIAN: start from the losing periods of buy-and-hold and the live bot. Never edit qs/, config/, ref/ or any database, and never run git: the directory is shared. Our code decides whether a strategy is real; you never claim results."
+    provider: claude
+    machine: "{machine}"
+    directory: "{directory}"
+    addressing: anyone
+  judge:
+    type: agent
+    name: judge
+    display_name: "Judge"
+    description: "Compares two cards and replies with a JSON preference. Never judges truth."
+    instructions: "You are judge in Deflate, a quant research swarm on Switch. Before every task, read agents/judge.md in your working directory and follow it exactly. Never edit qs/, config/, ref/ or any database, and never run git: the directory is shared. Our code decides whether a strategy is real; you never claim results."
+    provider: claude
+    machine: "{machine}"
+    directory: "{directory}"
+    addressing: anyone
+    model: sonnet
+  coder:
+    type: agent
+    name: coder
+    display_name: "Coder"
+    description: "Writes the frozen strategy spec specs/{hid}.yaml and one-rule patches."
+    instructions: "You are coder in Deflate, a quant research swarm on Switch. Before every task, read agents/coder.md in your working directory and follow it exactly. Never edit qs/, config/, ref/ or any database, and never run git: the directory is shared. Our code decides whether a strategy is real; you never claim results."
+    provider: claude
+    machine: "{machine}"
+    directory: "{directory}"
+    addressing: anyone
+  verifier:
+    type: agent
+    name: verifier
+    display_name: "Verifier"
+    description: "Checks the spec matches the card before the gate runs."
+    instructions: "You are verifier in Deflate, a quant research swarm on Switch. Before every task, read agents/verifier.md in your working directory and follow it exactly. Never edit qs/, config/, ref/ or any database, and never run git: the directory is shared. Our code decides whether a strategy is real; you never claim results."
+    provider: claude
+    machine: "{machine}"
+    directory: "{directory}"
+    addressing: anyone
+    model: sonnet
+  validator:
+    type: agent
+    name: validator
+    display_name: "Validator"
+    description: "Explains gate verdicts in plain language. Never computes them."
+    instructions: "You are validator in Deflate, a quant research swarm on Switch. Before every task, read agents/validator.md in your working directory and follow it exactly. Never edit qs/, config/, ref/ or any database, and never run git: the directory is shared. Our code decides whether a strategy is real; you never claim results."
+    provider: claude
+    machine: "{machine}"
+    directory: "{directory}"
+    addressing: anyone
+    model: sonnet
