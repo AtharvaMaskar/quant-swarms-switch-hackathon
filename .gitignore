@@ -9,3 +9,5 @@ landing/dist/
 landing/.taste-skill/
 research*.db*
 papers/
+.env*
+!.env.example
