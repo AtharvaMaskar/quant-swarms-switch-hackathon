@@ -71,6 +71,15 @@ def _utc_local(ts):
         return ts
 
 
+REF_ENGINE = "audit-stored-pnl"
+
+
+def _is_ref(engine_sha, lens) -> bool:
+    """A reference audit (e.g. h0, the live bot's stored P&L) is a pre-existing strategy, not a trial of this
+    search: shown, never counted in trials, pass rate or the luck line."""
+    return engine_sha == REF_ENGINE or lens == "reference"
+
+
 def _base(hid):
     return ids._parse(hid)[0]
 
@@ -202,9 +211,12 @@ def state(con, refs=None, sw=None) -> dict:
         return {**EMPTY, "refs": refs or []}
     meta = _meta(con)
     ranked, pending = meta.get("ranked") or [], meta.get("judge_pending") or []
-    trials = con.execute('SELECT id, hyp_id, "window", demo, passed, started_at, json_extract(verdict, "$.failed"), '
-                         'json_extract(verdict, "$.metrics.sr"), json_extract(metrics, "$.dsr"), '
-                         'json_extract(verdict, "$.checks") FROM trials ORDER BY id').fetchall()
+    trials = con.execute('SELECT t.id, t.hyp_id, t."window", t.demo, t.passed, t.started_at, json_extract(t.verdict, "$.failed"), '
+                         'json_extract(t.verdict, "$.metrics.sr"), json_extract(t.metrics, "$.dsr"), '
+                         'json_extract(t.verdict, "$.checks"), t.engine_sha, json_extract(h.card, "$.lens") '
+                         "FROM trials t LEFT JOIN hypotheses h ON h.id = t.hyp_id ORDER BY t.id").fetchall()
+    refs_n = sum(_is_ref(t[10], t[11]) for t in trials)
+    trials = [t for t in trials if not _is_ref(t[10], t[11])]   # counted trials only from here on
     last_ts = dict(con.execute("SELECT hyp_id, max(ts) FROM messages WHERE hyp_id IS NOT NULL GROUP BY hyp_id"))
     signed = dict(con.execute('SELECT hyp_id, decision FROM signoffs ORDER BY rowid'))
     budget = _budget()
@@ -244,6 +256,7 @@ def state(con, refs=None, sw=None) -> dict:
             "lens": root_card.get("lens"), "contribution": root_card.get("contribution"),
             "source": src.get("url") or (f"{src.get('type')}:{src.get('id')}" if src.get("id") else None),
             "lit_id": _source_lit(root_card), "forked_from": root_card.get("forked_from"),
+            "ref": root_card.get("lens") == "reference",
             "patches": len(vs) - 1, "budget": budget, "trials": len(research),
             "gate": None if last is None else {"trial": last[0], "passed": bool(last[4]), "demo": bool(last[3]),
                                                "failed": _j(last[6], []) or [], "sr": last[7], "dsr": last[8],
@@ -257,7 +270,7 @@ def state(con, refs=None, sw=None) -> dict:
     emax = gstats.expected_max_sr(len(research), float(srs.var(ddof=1))) if len(srs) > 1 else None
     hb = con.execute("SELECT max(ts), max(id) FROM messages").fetchone()
     kpis = {
-        "trials": len(trials), "research_trials": len(research),
+        "trials": len(trials), "research_trials": len(research), "reference_audits": refs_n,
         "families": len({n["family"] for n in nodes}), "hypotheses": len(nodes),
         "emax_sr": emax, "sr_sd": float(srs.std(ddof=1)) if len(srs) > 1 else None,
         "best_sr": float(srs.max()) if len(srs) else None,
@@ -421,12 +434,13 @@ def trials(con) -> dict:
             'json_extract(t.metrics, "$.pbo"), json_extract(t.metrics, "$.cpcv_median"), '
             'json_extract(t.verdict, "$.metrics.cpcv_pos"), json_extract(t.verdict, "$.metrics.net_inr"), '
             'json_extract(t.verdict, "$.metrics.n_bets"), json_extract(t.verdict, "$.checks.costs.value"), '
-            'json_extract(t.verdict, "$.metrics.sr"), json_extract(t.verdict, "$.summary"), json_extract(t.verdict, "$.checks") '
+            'json_extract(t.verdict, "$.metrics.sr"), json_extract(t.verdict, "$.summary"), json_extract(t.verdict, "$.checks"), '
+            't.engine_sha '
             "FROM trials t LEFT JOIN hypotheses h ON h.id = t.hyp_id ORDER BY t.id DESC").fetchall()
     except sqlite3.OperationalError:
         return {"rows": [], "n": 0, "passed": 0, "emax_sr": None}
     keys = ("id", "hid", "slug", "lens", "window", "demo", "passed", "when", "failed", "dsr", "psr", "pbo",
-            "cpcv_median", "cpcv_pos", "net_inr", "bets", "cost_ratio", "sr", "summary", "checks")
+            "cpcv_median", "cpcv_pos", "net_inr", "bets", "cost_ratio", "sr", "summary", "checks", "engine")
     out = []
     for r in rows:
         d = dict(zip(keys, r))
@@ -437,15 +451,18 @@ def trials(con) -> dict:
                 d["net_frac"], d["psr"] = float(m[1]), float(m[2])
         d.pop("summary")
         d["fails"], d["n_checks"] = _fails(d.pop("checks"), d["failed"])
+        d["ref"] = _is_ref(d.pop("engine"), d["lens"])
         try:
             d["lineage"] = " ← ".join(reversed(db._lineage(d["hid"]).split(" → ")))
         except ValueError:
             d["lineage"] = d["hid"]
         out.append(d)
-    research = [d for d in out if d["window"] == "research"]
+    counted = [d for d in out if not d["ref"]]
+    research = [d for d in counted if d["window"] == "research"]
     srs = np.array([d["sr"] for d in research if d["sr"] is not None], float)
     meta = _meta(con)
-    return {"rows": out, "n": len(out), "research": len(research), "passed": sum(d["passed"] for d in research),
+    return {"rows": out, "n": len(counted), "references": len(out) - len(counted), "research": len(research),
+            "passed": sum(d["passed"] for d in research),
             "emax_sr": gstats.expected_max_sr(len(research), float(srs.var(ddof=1))) if len(srs) > 1 else None,
             "prior_trials": meta.get("prior_trials_reported"), "prior_note": meta.get("prior_trials_note")}
 
@@ -497,6 +514,12 @@ def make_handler(db_path: str, refs: list[dict], sw=None, search_path: str | Non
             q = {k: v[0] for k, v in parse_qs(u.query).items()}
             if u.path == "/":
                 return self._send(200, PAGE.read_bytes(), "text/html; charset=utf-8")
+            if u.path.startswith("/avatars/"):
+                name = u.path[len("/avatars/"):].removesuffix(".png")
+                f = ROOT / "assets" / "avatars" / f"{name}.png"
+                if re.fullmatch(r"[a-z0-9-]+", name) and f.is_file():
+                    return self._send(200, f.read_bytes(), "image/png")
+                return self._send(404, b"", "image/png")
             if u.path == "/api/stream":
                 return self._stream()
             src = "search" if q.get("source") == "search" else "run"

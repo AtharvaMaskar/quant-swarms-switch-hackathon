@@ -58,6 +58,9 @@ def _db(tmp_path):
                                    "threshold": ">0.0, pos>=0.8", "note": "N=8 k=2"}}}
     db.record_trial(con, "h1", "research", {"thr": 1}, "s", "e", "g", True, daily, {"dsr": 0.2}, verdict, False)
     db.log(con, "result", "research trial FAIL", hyp_id="h1")
+    db.add_hypothesis(con, "h3", "live-bot", {"slug": "live-bot", "lens": "reference"})   # reference audit, like h0
+    db.record_trial(con, "h3", "research", {}, "s", "audit-stored-pnl", "g", False, daily, {"dsr": 0.1},
+                    {"failed": [], "metrics": {"sr": 3.0}}, False)
     con.close()
     return path
 
@@ -76,7 +79,8 @@ def test_floor_endpoints(tmp_path):
     try:
         _, body = _get(base, "/api/state")
         s = json.loads(body)
-        assert not s["empty"] and s["kpis"]["trials"] == 1 and s["kpis"]["families"] == 2
+        assert not s["empty"] and s["kpis"]["trials"] == 1 and s["kpis"]["families"] == 3
+        assert s["kpis"]["reference_audits"] == 1 and s["kpis"]["research_trials"] == 1
         assert s["kpis"]["prior_trials"] == 987 and s["kpis"]["pass_rate"] == 0.0 and s["refs"][0]["psr"] is None
         cards = {c["hid"]: c for c in s["cards"]}
         assert cards["h1"]["gate"]["failed"] == ["dsr", "pbo"] and cards["h1"]["gate"]["demo"]
@@ -130,8 +134,9 @@ def test_floor_trials_table(tmp_path):
     base = f"http://127.0.0.1:{srv.server_address[1]}"
     try:
         run = json.loads(_get(base, "/api/trials?source=run")[1])
-        assert run["available"] and run["n"] == 1 and run["passed"] == 0 and run["emax_sr"] is None
-        r = run["rows"][0]
+        assert run["available"] and run["n"] == 1 and run["references"] == 1 and run["emax_sr"] is None
+        assert [(x["hid"], x["ref"]) for x in run["rows"]] == [("h3", True), ("h1", False)]
+        r = run["rows"][1]
         assert (r["hid"], r["slug"], r["lens"], r["window"], r["demo"], r["failed"], r["dsr"], r["sr"], r["net_inr"]) == \
                ("h1", "expiry-mom", "lead", "research", True, ["dsr", "pbo"], 0.2, 0.5, 8.0)
         assert r["n_checks"] == 3 and r["fails"] == [{"k": "dsr", "v": 0.2, "thr": ">0.95"},

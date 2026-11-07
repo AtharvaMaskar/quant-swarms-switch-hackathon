@@ -5,61 +5,81 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Deflate Research Floor</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg:#FAFAFA; --panel:#FFFFFF; --sunk:#F4F4F5; --line:#E5E5E5; --line-2:#EFEFEF; --ink:#0A0A0A; --ink-2:#404040;
-  --mute:#737373; --faint:#A3A3A3; --accent:#4F46E5; --accent-bg:#EEF2FF;
-  --green:#16A34A; --green-bg:#F0FDF4; --red:#DC2626; --red-bg:#FEF2F2; --amber:#D97706; --amber-bg:#FFFBEB;
-  --blue:#2563EB; --blue-bg:#EFF6FF; --grey:#737373; --grey-bg:#F4F4F5; --scrim:rgba(10,10,10,.18);
+  --bg:#0A0A0B; --panel:#111216; --sunk:#171820; --line:rgba(201,205,251,.10); --line-2:rgba(201,205,251,.06); --ink:#EDEDF3; --ink-2:#C3C5D8;
+  --mute:#8A8DA6; --faint:#575A72; --accent:#C9CDFB; --accent-bg:rgba(201,205,251,.10);
+  --green:#3DDC97; --green-bg:rgba(61,220,151,.12); --red:#FF4D4D; --red-bg:rgba(255,77,77,.13); --amber:#FBBF24; --amber-bg:rgba(251,191,36,.12);
+  --blue:#6AA8FF; --blue-bg:rgba(106,168,255,.13); --grey:#8A8DA6; --grey-bg:rgba(201,205,251,.07); --scrim:rgba(0,0,0,.55);
+  --dots:rgba(201,205,251,.045); --glow:rgba(201,205,251,.16); color-scheme: dark;
   --sans:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif; --mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
-  color-scheme: light;
+  --display:'Archivo','Arial Black',sans-serif;
+  --noise:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .5 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
-  --bg:#0B0B0C; --panel:#111113; --sunk:#18181B; --line:#222225; --line-2:#1B1B1E; --ink:#EDEDED; --ink-2:#C8C8C8;
-  --mute:#8B8B90; --faint:#5C5C61; --accent:#818CF8; --accent-bg:#1E1B4B;
-  --green:#4ADE80; --green-bg:#0E2016; --red:#F87171; --red-bg:#2A1213; --amber:#FBBF24; --amber-bg:#261C0A;
-  --blue:#60A5FA; --blue-bg:#0F1B2E; --grey:#8B8B90; --grey-bg:#1B1B1E; --scrim:rgba(0,0,0,.5); color-scheme: dark; } }
-:root[data-theme="dark"] {
-  --bg:#0B0B0C; --panel:#111113; --sunk:#18181B; --line:#222225; --line-2:#1B1B1E; --ink:#EDEDED; --ink-2:#C8C8C8;
-  --mute:#8B8B90; --faint:#5C5C61; --accent:#818CF8; --accent-bg:#1E1B4B;
-  --green:#4ADE80; --green-bg:#0E2016; --red:#F87171; --red-bg:#2A1213; --amber:#FBBF24; --amber-bg:#261C0A;
-  --blue:#60A5FA; --blue-bg:#0F1B2E; --grey:#8B8B90; --grey-bg:#1B1B1E; --scrim:rgba(0,0,0,.5); color-scheme: dark; }
+:root[data-theme="light"] {
+  --bg:#F2F1EC; --panel:#FFFFFF; --sunk:#F5F4EF; --line:rgba(26,31,107,.12); --line-2:rgba(26,31,107,.07); --ink:#0A0A0B; --ink-2:#2E3048;
+  --mute:#6B6E86; --faint:#A4A6B8; --accent:#3A3FB0; --accent-bg:rgba(58,63,176,.08);
+  --green:#0F9D58; --green-bg:rgba(15,157,88,.10); --red:#E5322D; --red-bg:rgba(229,50,45,.09); --amber:#B7791F; --amber-bg:rgba(183,121,31,.11);
+  --blue:#2563EB; --blue-bg:rgba(37,99,235,.09); --grey:#6B6E86; --grey-bg:rgba(26,31,107,.06); --scrim:rgba(10,10,11,.25);
+  --dots:rgba(26,31,107,.07); --glow:rgba(58,63,176,.14); color-scheme: light; }
+@media (prefers-color-scheme: light) { :root[data-theme="system"] {
+  --bg:#F2F1EC; --panel:#FFFFFF; --sunk:#F5F4EF; --line:rgba(26,31,107,.12); --line-2:rgba(26,31,107,.07); --ink:#0A0A0B; --ink-2:#2E3048;
+  --mute:#6B6E86; --faint:#A4A6B8; --accent:#3A3FB0; --accent-bg:rgba(58,63,176,.08);
+  --green:#0F9D58; --green-bg:rgba(15,157,88,.10); --red:#E5322D; --red-bg:rgba(229,50,45,.09); --amber:#B7791F; --amber-bg:rgba(183,121,31,.11);
+  --blue:#2563EB; --blue-bg:rgba(37,99,235,.09); --grey:#6B6E86; --grey-bg:rgba(26,31,107,.06); --scrim:rgba(10,10,11,.25);
+  --dots:rgba(26,31,107,.07); --glow:rgba(58,63,176,.14); color-scheme: light; } }
 * { box-sizing: border-box; }
-html, body { margin: 0; background: var(--bg); color: var(--ink); font: 400 13px/1.5 var(--sans); -webkit-font-smoothing: antialiased; }
+html, body { margin: 0; color: var(--ink); font: 400 13px/1.5 var(--sans); -webkit-font-smoothing: antialiased; }
+body { background: radial-gradient(var(--dots) 1px, transparent 1.2px) 0 0 / 24px 24px, var(--bg); min-height: 100vh; }
 a { color: var(--accent); text-decoration: none; } a:hover { text-decoration: underline; }
 button { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .mono, code, pre { font-family: var(--mono); font-variant-numeric: tabular-nums; }
 .num { font-variant-numeric: tabular-nums; }
 .mute { color: var(--mute); } .faint { color: var(--faint); }
-header.top { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 14px; padding: 10px 24px;
-  background: var(--bg); border-bottom: 1px solid var(--line); }
-.brand { font-weight: 600; font-size: 14px; } .brand span { color: var(--mute); font-weight: 400; }
-.live { display: inline-flex; align-items: center; gap: 6px; color: var(--mute); font-size: 12px; }
-.live i { width: 7px; height: 7px; border-radius: 50%; background: var(--faint); display: inline-block; }
-.live.on i { background: var(--green); }
+/* the one brand surface: indigo band with a violet corner glow and fine grain */
+.band { position: relative; color: #fff; border-bottom: 1px solid rgba(201,205,251,.16); isolation: isolate;
+  background: radial-gradient(700px 260px at 100% 0%, rgba(139,116,230,.30), transparent 70%), linear-gradient(135deg, #12164F 0%, #1A1F6B 100%); }
+.band::before { content: ''; position: absolute; inset: 0; background: var(--noise); opacity: .12; pointer-events: none; z-index: -1; }
+.band-in { max-width: 1880px; margin: 0 auto; padding: 0 24px 18px; }
+header.top { display: flex; align-items: center; gap: 14px; padding: 12px 24px; max-width: 1880px; margin: 0 auto; }
+.brand { font: 800 15px/1 var(--display); font-stretch: 125%; letter-spacing: .02em; text-transform: uppercase; }
+.brand span { font: 400 12px var(--mono); color: #A9AEE8; text-transform: none; letter-spacing: 0; margin-left: 6px; }
+.live { display: inline-flex; align-items: center; gap: 6px; color: #A9AEE8; font-size: 12px; }
+.live i { width: 7px; height: 7px; border-radius: 50%; background: #6B70B8; display: inline-block; }
+.live.on i { background: #3DDC97; box-shadow: 0 0 8px rgba(61,220,151,.7); }
 .top .sp { flex: 1; }
-.sw { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-2); border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; background: var(--panel); }
-.sw.off { color: var(--red); border-color: var(--red); background: var(--red-bg); }
+.sw { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #E6E8FF; border: 1px solid rgba(201,205,251,.22); border-radius: 999px; padding: 3px 10px; background: rgba(10,10,30,.25); }
+.sw.off { color: #FFB4B4; border-color: #FF4D4D; background: rgba(255,77,77,.16); }
+.band .ghost { background: rgba(10,10,30,.25); border-color: rgba(201,205,251,.22); color: #E6E8FF; }
+.band .ghost:hover { background: rgba(201,205,251,.12); }
 .banner { display: none; border: 1px solid var(--red); background: var(--red-bg); color: var(--red); border-radius: 10px; padding: 10px 16px; font-size: 13px; }
 .banner.on { display: block; }
 main.paused .board, main.paused .feed, main.paused #teams { opacity: .5; transition: opacity .15s; }
+.av { width: 24px; height: 24px; border-radius: 4px; flex: none; display: inline-flex; align-items: center; justify-content: center; overflow: hidden;
+  background: var(--accent-bg); color: var(--accent); font: 600 10px var(--mono); }
+.av img { width: 24px; height: 24px; display: block; image-rendering: pixelated; }
+.who { display: flex; align-items: center; gap: 10px; }
 .ghost { border: 1px solid var(--line); background: var(--panel); border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 12px; color: var(--ink-2); }
 .ghost:hover { background: var(--sunk); }
 main { max-width: 1880px; margin: 0 auto; padding: 20px 24px 64px; display: flex; flex-direction: column; gap: 20px; }
 .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; min-width: 0; }
-.ph { display: flex; align-items: baseline; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
-.ph h2 { margin: 0; font-size: 14px; font-weight: 600; } .ph .sub { color: var(--mute); font-size: 12px; }
+.ph { display: flex; align-items: baseline; gap: 12px; padding: 13px 16px; border-bottom: 1px solid var(--line); }
+.ph h2 { margin: 0; font: 700 13px/1.2 var(--display); font-stretch: 125%; text-transform: uppercase; letter-spacing: .06em; white-space: nowrap; }
+.ph h2 .ix { font: 500 11px var(--mono); color: var(--accent); letter-spacing: .04em; margin-right: 8px; opacity: .85; }
+.ph .sub { color: var(--mute); font-size: 12px; }
 .ph .sp { flex: 1; }
 .pb { padding: 12px 16px; }
 h3 { margin: 0 0 8px; font-size: 13px; font-weight: 600; }
-.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
-.kpi { padding: 12px 16px; border-right: 1px solid var(--line-2); min-width: 0; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); border: 1px solid rgba(201,205,251,.16); border-radius: 10px; background: rgba(8,9,30,.28); }
+.kpi { padding: 14px 16px 12px; border-right: 1px solid rgba(201,205,251,.12); min-width: 0; }
 .kpi:last-child { border-right: 0; }
-.kpi .l { font-size: 12px; color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.kpi .v { font: 500 20px/1.3 var(--sans); font-variant-numeric: tabular-nums; margin-top: 2px; }
-.kpi .n { font-size: 11.5px; color: var(--mute); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kpi .l { font: 500 11px var(--mono); text-transform: uppercase; letter-spacing: .06em; color: #A9AEE8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kpi .v { font: 800 28px/1.15 var(--display); font-stretch: 125%; font-variant-numeric: tabular-nums; margin-top: 6px; color: #fff; }
+.kpi .v.idle { color: #FBBF24; }
+.kpi .n { font-size: 11.5px; color: #A9AEE8; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kpi .n .faint { color: #8086C8; }
 .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; flex: none; background: var(--faint); }
 .chip { display: inline-flex; align-items: center; gap: 5px; font: 500 11px/1 var(--sans); padding: 3px 7px; border-radius: 999px;
   background: var(--grey-bg); color: var(--ink-2); white-space: nowrap; }
@@ -68,13 +88,16 @@ h3 { margin: 0 0 8px; font-size: 13px; font-weight: 600; }
 .chip.amber { background: var(--amber-bg); color: var(--amber); } .chip.blue { background: var(--blue-bg); color: var(--blue); }
 .chip.acc { background: var(--accent-bg); color: var(--accent); } .chip.out { background: transparent; border: 1px solid var(--line); color: var(--mute); }
 .board { display: grid; grid-template-columns: repeat(9, minmax(152px, 1fr)); overflow-x: auto; }
-.col { border-right: 1px solid var(--line-2); min-height: 180px; padding: 10px 8px 12px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.col { box-shadow: inset 0 2px 0 color-mix(in srgb, var(--c, var(--faint)) 60%, transparent); border-right: 1px solid var(--line-2); min-height: 180px; padding: 10px 8px 12px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .col:last-child { border-right: 0; }
 .colh { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--mute); padding: 0 4px 2px; white-space: nowrap; }
 .colh b { font-weight: 500; color: var(--ink-2); } .colh .c { margin-left: auto; font-family: var(--mono); font-size: 11px; }
-.card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 9px; cursor: pointer; display: flex;
-  flex-direction: column; gap: 4px; text-align: left; width: 100%; transition: border-color .15s, opacity .15s; }
-.card:hover { border-color: var(--faint); } .card.sel { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.card { background: linear-gradient(180deg, rgba(201,205,251,.035), transparent 60%), var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 9px; cursor: pointer; display: flex;
+  flex-direction: column; gap: 4px; text-align: left; width: 100%; transition: border-color .15s, box-shadow .15s, translate .15s; }
+.card:hover { translate: 0 -2px; border-color: color-mix(in srgb, var(--accent) 40%, transparent); box-shadow: 0 8px 22px -6px var(--glow); }
+.card.sel { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 8px 22px -6px var(--glow); }
+.card.changed { animation: changed 1.4s ease-out; }
+@keyframes changed { 0% { box-shadow: 0 0 0 2px var(--accent), 0 0 24px var(--glow); } 100% { box-shadow: 0 0 0 0 transparent; } }
 .card .r1 { display: flex; align-items: center; gap: 6px; }
 .card .hid { font: 500 12px/1.2 var(--mono); }
 .card .slug { font-size: 12.5px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -91,7 +114,7 @@ h3 { margin: 0 0 8px; font-size: 13px; font-weight: 600; }
 .seg button.on { background: var(--accent-bg); color: var(--accent); }
 .seg button:disabled { opacity: .45; cursor: not-allowed; }
 .strip { display: flex; gap: 24px; align-items: center; flex-wrap: wrap; padding: 12px 16px; border-bottom: 1px solid var(--line-2); }
-.strip .big { font-size: 20px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.strip .big { font: 800 20px/1.2 var(--display); font-stretch: 125%; font-variant-numeric: tabular-nums; }
 .tt { max-height: 520px; overflow-y: auto; }
 .tt table { table-layout: fixed; }
 .tt th { position: sticky; top: 0; background: var(--panel); cursor: pointer; user-select: none; z-index: 1; overflow: hidden; text-overflow: ellipsis; }
@@ -102,7 +125,7 @@ h3 { margin: 0 0 8px; font-size: 13px; font-weight: 600; }
 .tt tbody tr:focus-visible { outline: none; }
 .vrd { display: inline-flex; align-items: center; gap: 6px; } .vrd .mono { font-size: 11px; color: var(--mute); }
 .pop { position: fixed; z-index: 30; width: 320px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
-  box-shadow: 0 6px 20px rgba(0,0,0,.12); padding: 10px 12px; opacity: 0; pointer-events: none; transition: opacity .12s; font-size: 12px; }
+  box-shadow: 0 10px 30px rgba(0,0,0,.35), 0 0 0 1px var(--line-2); padding: 10px 12px; opacity: 0; pointer-events: none; transition: opacity .12s; font-size: 12px; }
 .pop.on { opacity: 1; }
 .pop .pc { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
 .pop .h { color: var(--mute); font-size: 11.5px; }
@@ -168,47 +191,49 @@ details[open] > summary::before { transform: rotate(90deg); }
 </style>
 </head>
 <body>
+<div class="band">
 <header class="top">
-  <div class="brand">Deflate <span>· research floor</span></div>
+  <div class="brand">Deflate<span>research floor</span></div>
   <span class="live" id="live"><i></i><span>connecting</span></span>
   <span class="sp"></span>
   <span class="sw" id="sw"><span class="dot"></span><span>Switch: connecting</span></span>
-  <button class="ghost" id="theme" type="button" title="Theme: follows the OS until you pick one">Theme: system</button>
+  <button class="ghost" id="theme" type="button" title="Theme: dark, light, or follow the OS">Theme: dark</button>
 </header>
+<div class="band-in"><section class="kpis" id="kpis" aria-label="Key numbers"></section></div>
+</div>
 <main id="main">
   <div class="banner" id="banner"></div>
-  <section class="panel kpis" id="kpis" aria-label="Key numbers"></section>
   <section class="panel" aria-label="Pipeline">
-    <div class="ph"><h2>Pipeline</h2><span class="sub">one card per patch line; click a card for its receipts</span><span class="sp"></span><span class="sub" id="boardsub"></span></div>
+    <div class="ph"><h2><span class="ix">01 /</span>Pipeline</h2><span class="sub">one card per patch line; click a card for its receipts</span><span class="sp"></span><span class="sub" id="boardsub"></span></div>
     <div id="board"></div>
   </section>
   <section class="panel" aria-label="Strategies tested">
-    <div class="ph"><h2>Strategies tested</h2><span class="sub">every trial, newest first; click a row for its gate receipt</span><span class="sp"></span>
+    <div class="ph"><h2><span class="ix">02 /</span>Strategies tested</h2><span class="sub">every trial, newest first; click a row for its gate receipt</span><span class="sp"></span>
       <div class="seg" role="group" aria-label="Source"><button type="button" data-src="run" class="on">This run</button><button type="button" data-src="search">Earlier search</button></div></div>
     <div id="trials"></div>
   </section>
   <div class="grid2">
     <section class="panel" aria-label="Agent teams at work">
-      <div class="ph"><h2>Agent teams at work</h2><span class="sub" id="teamsub">live from Switch</span></div>
+      <div class="ph"><h2><span class="ix">03 /</span>Agent teams at work</h2><span class="sub" id="teamsub">live from Switch</span></div>
       <div id="teams"></div>
     </section>
     <section class="panel" aria-label="Papers">
-      <div class="ph"><h2>Papers</h2><span class="sub">paper threads and what they produced; click one for its thread</span></div>
+      <div class="ph"><h2><span class="ix">04 /</span>Papers</h2><span class="sub">paper threads and what they produced; click one for its thread</span></div>
       <div id="papers"></div>
     </section>
   </div>
   <div class="grid2">
     <section class="panel lin" aria-label="Lineage">
-      <div class="ph"><h2>Lineage</h2><span class="sub">root → patches v2, v3 → forks .1, .2</span></div>
+      <div class="ph"><h2><span class="ix">05 /</span>Lineage</h2><span class="sub">root → patches v2, v3 → forks .1, .2</span></div>
       <div class="pb" id="lineage" style="overflow-x:auto"></div>
     </section>
     <section class="panel" aria-label="References and calibration">
-      <div class="ph"><h2>References and calibration</h2></div>
+      <div class="ph"><h2><span class="ix">06 /</span>References and calibration</h2></div>
       <div id="refs"></div>
     </section>
   </div>
   <section class="panel" aria-label="Activity">
-    <div class="ph"><h2>Activity</h2><span class="sub">Slack threads (via Switch) merged with the orchestrator log, newest first</span><span class="sp"></span>
+    <div class="ph"><h2><span class="ix">07 /</span>Activity</h2><span class="sub">Slack threads (via Switch) merged with the orchestrator log, newest first</span><span class="sp"></span>
       <select id="feedhyp" aria-label="Filter by hypothesis or paper"><option value="">Everything</option></select></div>
     <div class="feed" id="feed"></div>
   </section>
@@ -269,27 +294,27 @@ const calm = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 const ui = { src: 'run', sortKey: 'id', sortDir: -1, dsrc: 'run', focus: null, sel: null, paper: null, trial: null, feedHyp: store.get('floor.feedHyp') || '', day: null, seen: null };
 
 // ---------- theme ----------
-const THEMES = ['system', 'light', 'dark'];
-function applyTheme(t) { if (t === 'system') document.documentElement.removeAttribute('data-theme'); else document.documentElement.dataset.theme = t;
+const THEMES = ['dark', 'light', 'system'];   // dark-first; "system" follows the OS
+function applyTheme(t) { if (!THEMES.includes(t)) t = 'dark'; document.documentElement.dataset.theme = t;
   $('theme').textContent = 'Theme: ' + t; store.set('floor.theme', t); }
-applyTheme(store.get('floor.theme') || 'system');
-$('theme').onclick = () => applyTheme(THEMES[(THEMES.indexOf(store.get('floor.theme') || 'system') + 1) % 3]);
+applyTheme(store.get('floor.theme') || 'dark');
+$('theme').onclick = () => applyTheme(THEMES[(THEMES.indexOf(store.get('floor.theme') || 'dark') + 1) % 3]);
 
 // ---------- KPIs ----------
-function kpi(l, v, n, title = '') { return `<div class="kpi" title="${esc(title)}"><div class="l">${l}</div><div class="v">${v}</div><div class="n">${n || '&nbsp;'}</div></div>`; }
+function kpi(l, v, n, title = '', cls = '') { return `<div class="kpi" title="${esc(title)}"><div class="l">${l}</div><div class="v ${cls}">${v}</div><div class="n">${n || '&nbsp;'}</div></div>`; }
 function kpis() {
   const k = S.kpis || {};
   const hbAge = k.heartbeat ? (Date.now() - Date.parse(k.heartbeat)) / 1000 : null;
   $('kpis').innerHTML =
-    kpi('Trials counted', k.trials ?? 0, `${k.research_trials ?? 0} research · every run, failures included`, 'Every trial is counted, patches and failures included; this is the N that deflates every Sharpe.')
+    kpi('Trials counted', k.trials ?? 0, `${k.research_trials ?? 0} research · failures included${k.reference_audits ? ` · ${k.reference_audits} reference audit not counted` : ''}`, 'Every trial is counted, patches and failures included; this is the N that deflates every Sharpe.')
     + kpi('Families', k.families ?? 0, `${k.hypotheses ?? 0} hypotheses`)
     + kpi('Luck-alone E[max SR]', k.emax_sr == null ? dash : f(k.emax_sr), k.emax_sr == null ? 'needs 2 research trials' : `at N = ${k.research_trials}, SR sd ${f(k.sr_sd)} · best ${f(k.best_sr)}`,
       'False Strategy theorem: the best annualised Sharpe you expect from luck alone after this many trials (independent-trials bound). A real edge has to sit above it.')
     + kpi('Pass rate', k.pass_rate == null ? dash : pct(k.pass_rate), `${k.passed ?? 0} of ${k.research_trials ?? 0} research trials`)
     + kpi('Round', k.round ?? 1, k.stopped ? '<span style="color:var(--red)">stopped</span>' : 'running')
-    + kpi('Heartbeat', k.heartbeat ? ago(k.heartbeat) + ' ago' : dash, k.heartbeat ? `last message ${hm(k.heartbeat)} · #${k.last_msg}` : 'no messages yet',
-      'Time since the orchestrator log last moved (messages table).')
-    + kpi('Prior project', `<span class="mute">${esc(k.prior_trials ?? 987)}</span>`, 'reported, not counted', k.prior_note || '');
+    + kpi('Heartbeat', k.heartbeat ? ago(k.heartbeat) : dash, k.heartbeat ? `${hbAge > 900 ? 'idle · ' : ''}last message ${hm(k.heartbeat)} · #${k.last_msg}` : 'no messages yet',
+      'Time since the orchestrator log last moved (messages table). Over 15 min reads as idle: agents may be thinking or waiting on a human.', hbAge > 900 ? 'idle' : '')
+    + kpi('Prior project', `<span style="color:#A9AEE8">${esc(k.prior_trials ?? 987)}</span>`, 'reported, not counted', k.prior_note || '');
 }
 
 // ---------- board (FLIP: cards slide between columns) ----------
@@ -320,11 +345,12 @@ uv run python -m qs.cli run-orchestrator --humans &lt;your-switch-name&gt;   # a
 <div style="margin-top:10px">Then post <span class="mono">deflate implement &lt;arXiv url&gt;</span> or wait for the proposers in <span class="mono">#deflate-control</span>.${S.no_db ? `<br>No database at <span class="mono">${esc(S.no_db)}</span> yet.` : ''}</div></div>`;
     return;
   }
-  const before = {};
+  const before = {}, prevStatus = ui.status || {};
   document.querySelectorAll('#board .card').forEach((el) => { before[el.dataset.hid.replace(/v\d+$/, '')] = el.getBoundingClientRect(); });
+  ui.status = Object.fromEntries(S.cards.map((c) => [c.base, c.status + c.hid]));
   const by = {}; S.columns.forEach((c) => (by[c] = []));
   S.cards.forEach((c) => (by[c.column] || by.proposed).push(c));
-  $('board').innerHTML = `<div class="board">${S.columns.map((c) => `<div class="col"><div class="colh"><span class="dot" style="background:${ST[COLDOT[c]]}"></span><b>${COLS[c]}</b><span class="c">${by[c].length}</span></div>
+  $('board').innerHTML = `<div class="board">${S.columns.map((c) => `<div class="col" style="--c:${ST[COLDOT[c]]}"><div class="colh"><span class="dot" style="background:${ST[COLDOT[c]]}"></span><b>${COLS[c]}</b><span class="c">${by[c].length}</span></div>
 ${by[c].length ? by[c].map(cardHtml).join('') : '<div class="empty-col">—</div>'}</div>`).join('')}</div>`;
   const live = S.cards.filter((c) => c.column !== 'closed').length;
   $('boardsub').textContent = `${live} live · ${S.cards.length - live} closed`;
@@ -332,6 +358,8 @@ ${by[c].length ? by[c].map(cardHtml).join('') : '<div class="empty-col">—</div
     el.onclick = () => { hidePop(); openDrawer(el.dataset.hid); };
     const more = el.querySelector('[data-more]'), card = S.cards.find((x) => x.hid === el.dataset.hid);
     if (more && card) bindPop(more, () => more, () => `<div class="h"><span class="mono" style="color:var(--ink)">${esc(card.hid)}</span> · last gate failed ${card.gate.fails.length} of ${card.gate.n_checks} checks (value / gate)</div><div class="pc">${failChips(card.gate.fails)}</div>`);
+    const cur = S.cards.find((x) => x.hid === el.dataset.hid);
+    if (cur && prevStatus[cur.base] && prevStatus[cur.base] !== ui.status[cur.base]) { el.classList.add('changed'); setTimeout(() => el.classList.remove('changed'), 1500); }
     if (calm()) return;
     const b = before[el.dataset.hid.replace(/v\d+$/, '')]; if (!b) { el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 150 }); return; }
     const a = el.getBoundingClientRect(), dx = b.left - a.left, dy = b.top - a.top;
@@ -416,13 +444,19 @@ function switchState() {
   main.classList.add('paused'); b.classList.add('on');
   b.innerHTML = `<b>Switch offline: the floor is paused.</b> The agents work through Switch, so nothing moves until it answers again. ${esc(w.error || '')}. Last DB state is shown below, dimmed.`;
 }
+const AV_RAW = 'https://raw.githubusercontent.com/AtharvaMaskar/quant-swarms-switch-hackathon/feat/deflate/assets/avatars/';
+const initials = (n) => String(n).split(/[\s·-]+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join('');
+// local copy first (served from assets/avatars), then GitHub raw, then initials
+function avErr(img) { if (!img.dataset.raw) { img.dataset.raw = 1; img.src = AV_RAW + img.dataset.name + '.png'; return; }
+  const box = img.parentNode; box.textContent = box.dataset.i; }
 function teams() {
   const w = S.switch || {};
   if (!w.ok) { $('teamsub').textContent = w.ok === false ? 'Switch offline' : 'Switch not wired'; $('teams').innerHTML = `<div class="pb note">${w.ok === false ? 'Agent status comes from Switch, which is not answering.' : 'Start the floor without --no-switch to see who is live.'}</div>`; return; }
   const A = w.agents.list || [], roles = w.agents.roles || [];
   $('teamsub').textContent = `#${w.room.name} on ${w.room.bridge || '—'} · ${w.live} of ${A.length} live${w.room.users.length ? ' · humans: ' + w.room.users.join(', ') : ''}`;
   $('teams').innerHTML = `<table><thead><tr><th>Agent</th><th>Status</th><th>Role</th><th>Runs on</th><th>Job</th></tr></thead><tbody>${A.map((a) => `<tr>
-<td><div style="font-weight:500">${esc(a.display)}</div><div class="mono mute" style="font-size:11px">${esc(a.name)}</div></td>
+<td><div class="who"><span class="av" data-i="${esc(initials(a.display || a.name))}"><img alt="" src="/avatars/${esc(a.name)}.png" data-name="${esc(a.name)}" onerror="avErr(this)"></span>
+<div><div style="font-weight:500">${esc(a.display)}</div><div class="mono mute" style="font-size:11px">${esc(a.name)}</div></div></div></td>
 <td><span class="chip ${a.status === 'live' ? 'pass' : ''}"><span class="dot" style="background:${a.status === 'live' ? 'var(--green)' : 'var(--faint)'}"></span>${esc(a.status)}</span></td>
 <td>${a.roles.length ? a.roles.map((r) => `<span class="chip acc">${esc(r)}</span>`).join(' ') : '<span class="faint">—</span>'}</td>
 <td class="mute" style="white-space:nowrap">${esc(a.connector || '')}</td><td class="mute" style="font-size:12px">${esc(a.about || '')}</td></tr>`).join('')}</tbody></table>
@@ -448,7 +482,7 @@ addEventListener('scroll', hidePop, true);
 let T = null;
 // [key, label, render, align, tooltip, width, class]
 const TCOLS = [
-  ['hid', 'Strategy', (r) => `<span class="mono" style="font-weight:500">${esc(r.hid)}</span>${r.lineage.includes('←') ? ` <span class="mono faint" style="font-size:11px">${esc(r.lineage.slice(r.lineage.indexOf('←')))}</span>` : ''}`, '', '', 150],
+  ['hid', 'Strategy', (r) => `<span class="mono" style="font-weight:500">${esc(r.hid)}</span>${r.ref ? ' <span class="chip m acc" title="A pre-existing strategy audited for reference; not a trial of this search, so it is not counted in trials, pass rate or the luck line">reference audit</span>' : ''}${r.lineage.includes('←') ? ` <span class="mono faint" style="font-size:11px">${esc(r.lineage.slice(r.lineage.indexOf('←')))}</span>` : ''}`, '', '', 196],
   ['slug', 'Slug', (r) => `<span title="${esc(r.slug || '')}">${esc(r.slug || '—')}</span>`, '', '', null],
   ['lens', 'Lens', (r) => r.lens ? esc(r.lens) : dash, '', '', 92, 'c-lens'],
   ['window', 'Window', (r) => `<span class="chip out">${esc(r.window)}</span>`, '', '', 86, 'c-window'],
@@ -469,21 +503,27 @@ async function loadTrials() {
 }
 document.querySelectorAll('.seg button[data-src]').forEach((b) => (b.onclick = () => { ui.src = b.dataset.src; document.querySelectorAll('.seg button[data-src]').forEach((x) => x.classList.toggle('on', x === b)); loadTrials(); }));
 function scatter(rows, emax) {
-  const R = rows.filter((r) => r.window === 'research' && r.sr != null).sort((a, b) => a.id - b.id); if (!R.length) return '';
+  const R = rows.filter((r) => r.window === 'research' && r.sr != null && !r.ref).sort((a, b) => a.id - b.id); if (!R.length) return '';
+  const dot = (x, y, r) => { const c = r.passed ? 'var(--green)' : 'var(--red)';
+    return `<g><title>${esc(r.hid)} · SR ${f(r.sr)} · DSR ${f(r.dsr, 3)}${r.dsr >= .95 ? ' · confident' : ''}</title><circle cx="${x}" cy="${y}" r="8" fill="${c}" opacity=".16"/><circle cx="${x}" cy="${y}" r="5" fill="${c}" opacity=".22"/>
+${r.dsr >= .95 ? `<circle cx="${x}" cy="${y}" r="8.5" fill="none" stroke="var(--green)" stroke-width="1.5"/>` : ''}<circle cx="${x}" cy="${y}" r="3.2" fill="${c}"/></g>`; };
   if (R.length < 2 || emax == null) { const r = R[0];
     return `<div class="note">the luck line appears after 2 research trials · ${R.length} so far</div>
-<svg width="220" height="54" role="img" aria-label="Sharpe of the only trial"><line x1="40" x2="40" y1="6" y2="48" stroke="var(--line)"/>
-<text x="34" y="10" text-anchor="end">SR</text><circle cx="70" cy="27" r="3.5" fill="${r.passed ? 'var(--green)' : 'var(--red)'}"/>
-<line x1="36" x2="40" y1="27" y2="27" stroke="var(--line)"/><text x="34" y="30" text-anchor="end">${f(r.sr)}</text>
-<text x="80" y="30" style="fill:var(--ink-2)">${esc(r.hid)} · SR ${f(r.sr)} ann.</text></svg>`; }
-  const W = 420, H = 96, L = 34, Rt = 8, Tp = 8, B = 16, ys = R.map((r) => r.sr).concat([0, emax ?? 0]);
-  const lo = Math.min(...ys) - .15, hi = Math.max(...ys) + .15, X = (i) => L + (R.length === 1 ? .5 : i / (R.length - 1)) * (W - L - Rt), Y = (v) => Tp + (hi - v) / (hi - lo) * (H - Tp - B);
+<svg width="240" height="62" role="img" aria-label="Sharpe of the only trial"><text x="6" y="10">SR (ann.)</text><line x1="44" x2="44" y1="16" y2="58" stroke="var(--line)"/>
+<line x1="40" x2="44" y1="37" y2="37" stroke="var(--line)"/><text x="38" y="40" text-anchor="end">${f(r.sr)}</text>${dot(72, 37, r)}
+<text x="86" y="40" style="fill:var(--ink-2)">${esc(r.hid)} · SR ${f(r.sr)} ann.</text></svg>`; }
+  const W = 440, H = 112, L = 38, Rt = 8, Tp = 22, B = 16, ys = R.map((r) => r.sr).concat([0, emax]);
+  const lo = Math.min(...ys) - .15, hi = Math.max(...ys) + .2, X = (i) => L + i / (R.length - 1) * (W - L - Rt - 6) + 3, Y = (v) => Tp + (hi - v) / (hi - lo) * (H - Tp - B);
+  const yl = Y(emax);
   return `<svg width="${W}" height="${H}" role="img" aria-label="Sharpe of each trial against the luck line">
-<line x1="${L}" x2="${W - Rt}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--line)"/><text x="${L - 5}" y="${Y(0) + 3}" text-anchor="end">0</text>
-${emax != null ? `<line x1="${L}" x2="${W - Rt}" y1="${Y(emax)}" y2="${Y(emax)}" stroke="var(--mute)" stroke-dasharray="4 3"/><text x="${L - 5}" y="${Y(emax) + 3}" text-anchor="end">${f(emax, 1)}</text><text x="${W - Rt}" y="${Y(emax) - 4}" text-anchor="end">luck alone, E[max SR] at N=${R.length}</text>` : ''}
-${R.map((r, i) => `<g><title>${esc(r.hid)} · SR ${f(r.sr)} · DSR ${f(r.dsr, 3)}${r.dsr >= .95 ? ' · confident' : ''}</title>${r.dsr >= .95 ? `<circle cx="${X(i)}" cy="${Y(r.sr)}" r="7.5" fill="none" stroke="var(--green)" stroke-width="1.5"/>` : ''}
-<circle cx="${X(i)}" cy="${Y(r.sr)}" r="3.5" fill="${r.passed ? 'var(--green)' : 'var(--red)'}" opacity=".85"/></g>`).join('')}
-<text x="${L - 5}" y="${Tp + 4}" text-anchor="end">SR</text><text x="${L}" y="${H - 3}">first trial</text><text x="${W - Rt}" y="${H - 3}" text-anchor="end">latest</text></svg>`;
+<defs><linearGradient id="luckg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C9CDFB" stop-opacity=".22"/><stop offset="1" stop-color="#C9CDFB" stop-opacity="0"/></linearGradient></defs>
+<text x="4" y="10">SR (ann.)</text>
+<rect x="${L}" y="${yl}" width="${W - L - Rt}" height="${Math.max(0, H - B - yl)}" fill="url(#luckg)"><title>the zone luck alone can reach after ${R.length} trials</title></rect>
+<line x1="${L}" x2="${W - Rt}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--line)"/>${Math.abs(Y(0) - yl) > 11 ? `<text x="${L - 5}" y="${Y(0) + 3}" text-anchor="end">0</text>` : ''}
+<line x1="${L}" x2="${W - Rt}" y1="${yl}" y2="${yl}" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="5 4"/><text x="${L - 5}" y="${yl + 3}" text-anchor="end" style="fill:var(--accent)">${f(emax, 2)}</text>
+<text x="${W - Rt}" y="${yl - 5}" text-anchor="end" style="fill:var(--accent)">luck alone · E[max SR] at N=${R.length}</text>
+${R.map((r, i) => dot(X(i), Y(r.sr), r)).join('')}
+<text x="${L}" y="${H - 2}">first trial</text><text x="${W - Rt}" y="${H - 2}" text-anchor="end">latest</text></svg>`;
 }
 function trialsView() {
   const t = T; if (!t) return;
@@ -493,9 +533,9 @@ function trialsView() {
   if (!t.rows.length) { $('trials').innerHTML = `<div class="emptystate"><h3>No strategy has reached the gate yet</h3><div>The first one appears when the verifier signs off a frozen spec.</div><div style="margin-top:8px">${prior}</div></div>`; return; }
   const k = ui.sortKey, dir = ui.sortDir;
   const rows = [...t.rows].sort((a, b) => { const x = a[k], y = b[k]; if (x == null && y == null) return 0; if (x == null) return 1; if (y == null) return -1; return (x > y ? 1 : x < y ? -1 : 0) * dir; });
-  const conf = t.rows.filter((r) => r.dsr >= .95).length;
+  const conf = t.rows.filter((r) => r.dsr >= .95 && !r.ref).length;
   $('trials').innerHTML = `<div class="strip"><div><div class="big">${t.n} strateg${t.n === 1 ? 'y' : 'ies'} tested · ${t.passed} passed</div>
-<div class="note">${t.research} research${t.n - t.research ? ` + ${t.n - t.research} holdout` : ''} · ${conf} above the confident line (DSR ≥ 0.95)</div>${prior}</div>
+<div class="note">${t.research} research${t.n - t.research ? ` + ${t.n - t.research} holdout` : ''} · ${conf} above the confident line (DSR ≥ 0.95)${t.references ? ` · ${t.references} reference audit shown, not counted` : ''}</div>${prior}</div>
 <div title="Each dot is a research trial's annualised Sharpe (green PASS, red FAIL); a ring marks DSR ≥ 0.95. The dashed line is the best Sharpe luck alone would produce after this many trials.">${scatter(t.rows, t.emax_sr)}</div></div>
 <div class="tt"><table><colgroup>${TCOLS.map((c) => `<col class="${c[6] || ''}" ${c[5] ? `style="width:${c[5]}px"` : ''}>`).join('')}</colgroup><thead><tr>${TCOLS.map(([key, label, , al, tip, , cl]) => `<th class="${al || ''} ${cl || ''} ${key === k ? 'on' : ''}" data-k="${key}" title="${esc(tip || 'sort')}">${label}${key === k ? (dir > 0 ? ' ↑' : ' ↓') : ''}</th>`).join('')}</tr></thead>
 <tbody>${rows.map((r) => `<tr data-hid="${esc(r.hid)}" data-t="${r.id}" tabindex="0">${TCOLS.map(([, , fn, al, , , cl]) => `<td class="${al || ''} ${cl || ''}">${fn(r)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
@@ -677,7 +717,8 @@ function equity(t) {
 ${ticks.map((v) => `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line-2)"/><text x="${L - 6}" y="${Y(v) + 3}" text-anchor="end">${(v * 100).toFixed(1)}%</text>`).join('')}
 <line x1="${L}" x2="${W - R}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--line)"/>
 ${years.map(([i, y]) => `<line x1="${X(i)}" x2="${X(i)}" y1="${T}" y2="${H - B}" stroke="var(--line-2)"/><text x="${X(i) + 3}" y="${H - 6}">${y}</text>`).join('')}
-<path d="${line}L${X(n - 1)} ${Y(0)}L${X(0)} ${Y(0)}Z" fill="var(--accent)" opacity=".06"/>
+<defs><linearGradient id="eqg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C9CDFB" stop-opacity=".28"/><stop offset="1" stop-color="#C9CDFB" stop-opacity="0"/></linearGradient></defs>
+<path d="${line}L${X(n - 1)} ${H - B}L${X(0)} ${H - B}Z" fill="url(#eqg)"/>
 <path d="${line}" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linejoin="round"/>
 ${sel >= 0 ? `<line x1="${X(sel)}" x2="${X(sel)}" y1="${T}" y2="${H - B}" stroke="var(--ink-2)" stroke-dasharray="2 2"/><circle cx="${X(sel)}" cy="${Y(cum[sel])}" r="3.5" fill="var(--accent)"/>` : ''}
 </svg></div></section>`;
